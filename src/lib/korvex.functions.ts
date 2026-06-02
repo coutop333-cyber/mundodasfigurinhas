@@ -1,0 +1,299 @@
+import { createServerFn } from '@tanstack/react-start';
+import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server';
+import { z } from 'zod';
+import { supabaseAdmin } from '@/integrations/supabase/client.server';
+
+const KORVEX_BASE = 'https://app.korvex.com.br/api/v1';
+
+function getKorvexHeaders(): Record<string, string> {
+  const pub = process.env.KORVEX_PUBLIC_KEY?.trim();
+  const sec = process.env.KORVEX_SECRET_KEY?.trim();
+  if (!pub || !sec) {
+    throw new Error('KORVEX_PUBLIC_KEY / KORVEX_SECRET_KEY não configurados.');
+  }
+  return {
+    'x-public-key': pub,
+    'x-secret-key': sec,
+    'Content-Type': 'application/json',
+  };
+}
+
+function getWebhookUrl(): string {
+  const base =
+    process.env.KORVEX_WEBHOOK_BASE_URL?.trim() ||
+    process.env.VENOPAG_WEBHOOK_BASE_URL?.trim() ||
+    'https://eletrojundiai.shop';
+  return `${base.replace(/\/+$/, '')}/api/public/korvex-webhook`;
+}
+
+// ============ Warm ============
+export const warmKorvexPix = createServerFn({ method: 'POST' }).handler(async () => {
+  return { ok: true };
+});
+
+// ============ Schemas ============
+const trackingSchema = z
+  .object({
+    utms: z.record(z.string(), z.string()).optional(),
+    name: z.string().max(120).optional(),
+    email: z.string().email().max(120).optional(),
+    phone: z.string().max(40).optional(),
+    fbp: z.string().max(200).optional(),
+    fbc: z.string().max(200).optional(),
+    fbclid: z.string().max(200).optional(),
+    referrer: z.string().max(2048).optional(),
+    landing_url: z.string().max(2048).optional(),
+    user_agent: z.string().max(500).optional(),
+    first_seen_at: z.string().max(40).optional(),
+  })
+  .partial();
+
+const createInput = z.object({
+  kitId: z.number().int().min(1).max(99),
+  title: z.string().trim().min(3).max(255),
+  unitPrice: z.number().positive().min(1).max(10000),
+  externalReference: z
+    .string()
+    .trim()
+    .min(8)
+    .max(120)
+    .refine((v) => !/^(null|undefined|nan)$/i.test(v), 'externalReference inválido'),
+  payerEmail: z.string().email().max(120).optional(),
+  payerName: z.string().max(160).optional(),
+  payerPhone: z.string().max(40).optional(),
+  payerDocument: z.string().max(20).optional(),
+  tracking: trackingSchema.optional(),
+  source: z.enum(['default', 'produto4', 'produto5']).optional(),
+});
+
+export const createKorvexPixPayment = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => createInput.parse(input))
+  .handler(async ({ data }) => {
+    const totalStartedAt = Date.now();
+    const forwardedIp = getRequestHeader('x-forwarded-for')?.split(',')[0]?.trim();
+    const clientIp =
+      getRequestIP({ xForwardedFor: true }) ||
+      getRequestHeader('cf-connecting-ip') ||
+      getRequestHeader('x-real-ip') ||
+      forwardedIp ||
+      null;
+    const userAgent =
+      getRequestHeader('user-agent') || data.tracking?.user_agent || null;
+    const origin = getRequestHeader('origin') || getRequestHeader('referer') || null;
+
+    const tracking = data.tracking ?? {};
+    const trackingVazio =
+      !tracking ||
+      Object.keys(tracking).length === 0 ||
+      ((!tracking.utms || Object.keys(tracking.utms || {}).length === 0) &&
+        !tracking.fbp &&
+        !tracking.fbc &&
+        !tracking.fbclid &&
+        !tracking.email &&
+        !tracking.referrer &&
+        !tracking.landing_url);
+
+    const emailFake =
+      typeof data.payerEmail === 'string' &&
+      /cliente\+null@|cliente\+undefined@/i.test(data.payerEmail);
+
+    const blockReasons: string[] = [];
+    if (data.unitPrice < 1) blockReasons.push('amount < R$1,00');
+    if (emailFake) blockReasons.push('email fake');
+    if (!data.title || data.title.trim().length < 3) blockReasons.push('produto vazio');
+    if (!data.externalReference || data.externalReference.trim().length < 8)
+      blockReasons.push('external_reference vazio');
+    if (trackingVazio) blockReasons.push('tracking_payload vazio');
+    if (
+      !userAgent ||
+      /^(curl|wget|node|python|axios|go-http|healthcheck|bot)/i.test(userAgent)
+    ) {
+      blockReasons.push(`user_agent inválido: ${userAgent || 'null'}`);
+    }
+
+    if (blockReasons.length) {
+      console.error('[korvex-create][BLOQUEIO]', { motivos: blockReasons, origin });
+      throw new Error(`Pagamento bloqueado: ${blockReasons.join('; ')}`);
+    }
+
+    // Persistir pedido no banco ANTES de chamar Korvex
+    const pedidoId = data.externalReference;
+    const trackingToSave = { ...(data.tracking ?? {}), _source: data.source || 'default' } as any;
+
+    const { error: insertErr } = await supabaseAdmin
+      .from('orders')
+      .upsert(
+        {
+          external_reference: data.externalReference,
+          kit_id: data.kitId,
+          kit_title: data.title,
+          amount: Number(data.unitPrice.toFixed(2)),
+          status: 'pending',
+          tracking_payload: trackingToSave,
+          client_ip: clientIp,
+          client_user_agent: userAgent,
+        } as any,
+        { onConflict: 'external_reference' },
+      );
+
+    if (insertErr) {
+      console.error('[korvex-create] erro ao persistir pedido', insertErr);
+      throw new Error('Não foi possível registrar o pedido. Tente novamente.');
+    }
+
+    const webhookUrl = `${getWebhookUrl()}?ref=${encodeURIComponent(pedidoId)}`;
+
+    const body = {
+      identifier: pedidoId,
+      amount: Number(data.unitPrice.toFixed(2)),
+      client: {
+        name: data.payerName || tracking.name || 'Cliente',
+        email: data.payerEmail || tracking.email || undefined,
+        phone: data.payerPhone || tracking.phone || undefined,
+        document: data.payerDocument || undefined,
+      },
+      products: [
+        {
+          id: String(data.kitId),
+          name: data.title.slice(0, 100),
+          quantity: 1,
+          price: Number(data.unitPrice.toFixed(2)),
+        },
+      ],
+      callbackUrl: webhookUrl,
+      metadata: { externalReference: pedidoId },
+    };
+
+    let upstream: any = null;
+    let httpStatus = 0;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const res = await fetch(`${KORVEX_BASE}/gateway/pix/receive`, {
+        method: 'POST',
+        headers: getKorvexHeaders(),
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      httpStatus = res.status;
+      const text = await res.text();
+      try {
+        upstream = JSON.parse(text);
+      } catch {
+        upstream = { raw: text };
+      }
+      if (!res.ok) {
+        console.error('[korvex-create][ERROR]', { httpStatus, response: upstream });
+        const msg = upstream?.message || upstream?.error || `HTTP ${httpStatus}`;
+        throw new Error(`Falha ao gerar Pix (Korvex): ${msg}`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAbort = (err as any)?.name === 'AbortError' || /aborted|abort/i.test(msg);
+      if (isAbort) {
+        throw new Error('A geração do Pix demorou mais que o esperado. Tente novamente.');
+      }
+      throw new Error(msg.startsWith('Falha') ? msg : `Falha ao gerar Pix: ${msg}`);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    // Extrair campos da resposta Korvex
+    const transactionId: string = upstream?.transactionId || '';
+    const orderId: string = upstream?.order?.id || '';
+    const pixCode: string = upstream?.pix?.code || '';
+    // base64 pode vir como data URL completa "data:image/png;base64,..."
+    const rawBase64: string = upstream?.pix?.base64 || upstream?.pix?.image || '';
+    let pixBase64: string = rawBase64.startsWith('data:')
+      ? rawBase64.split(',')[1] || ''
+      : rawBase64;
+
+    if (!transactionId || !pixCode) {
+      console.error('[korvex-create][INCOMPLETO]', upstream);
+      throw new Error('Korvex retornou cobrança incompleta.');
+    }
+
+    // Gerar QR base64 local se a Korvex não retornou
+    if (!pixBase64 && pixCode) {
+      try {
+        const QRCode = (await import('qrcode')).default;
+        const dataUrl = await QRCode.toDataURL(pixCode, { margin: 1, width: 320 });
+        pixBase64 = dataUrl.split(',')[1] || '';
+      } catch (e) {
+        console.error('[korvex-create] erro ao gerar QR base64', e);
+      }
+    }
+
+    // Salvar dados Korvex no banco (reaproveitando colunas efi_*)
+    const { error: updateErr } = await supabaseAdmin
+      .from('orders')
+      .update({
+        efi_txid: transactionId,       // korvex_transaction_id
+        efi_loc_id: orderId,           // korvex_order_id
+        efi_qrcode: pixBase64 || null,
+        efi_copia_cola: pixCode,
+        efi_expires_at: null,
+        efi_status: 'PENDING',
+        efi_payload: upstream as any,
+      } as any)
+      .eq('external_reference', data.externalReference);
+
+    if (updateErr) {
+      console.error('[korvex-create] erro ao salvar dados', updateErr);
+      throw new Error('Pix gerado, mas não foi possível registrar o vínculo do pedido.');
+    }
+
+    console.log('[korvex-create][OK]', {
+      pedidoId,
+      transactionId,
+      orderId,
+      total_ms: Date.now() - totalStartedAt,
+    });
+
+    return {
+      id: transactionId,
+      txid: transactionId,
+      status: 'pending',
+      qr_code: pixCode,
+      qr_code_base64: pixBase64,
+      ticket_url: upstream?.order?.url || '',
+      external_reference: data.externalReference,
+      transaction_amount: Number(data.unitPrice.toFixed(2)),
+      expires_at: null,
+    };
+  });
+
+// ============ Polling de status via Supabase ============
+const statusInput = z.object({ txid: z.string().min(4).max(120) });
+
+export const getKorvexPaymentStatus = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => statusInput.parse(input))
+  .handler(async ({ data }) => {
+    const { data: order } = await supabaseAdmin
+      .from('orders')
+      .select('id, status, amount, external_reference, efi_status, efi_txid, created_at')
+      .eq('efi_txid', data.txid)
+      .maybeSingle();
+
+    if (!order) {
+      return { status: 'pending', external_reference: undefined, transaction_amount: 0 };
+    }
+
+    const internal = String(order.status || '').toLowerCase();
+    const gw = String((order as any).efi_status || '').toUpperCase();
+
+    const isPaid =
+      internal === 'approved' || internal === 'paid' || internal === 'pago' ||
+      gw === 'CONFIRMED' || gw === 'PAID' || gw === 'APPROVED';
+
+    const isFailed =
+      internal === 'rejected' || internal === 'cancelled' || internal === 'canceled' ||
+      gw === 'EXPIRED' || gw === 'CANCELLED';
+
+    return {
+      status: isPaid ? 'approved' : isFailed ? 'rejected' : 'pending',
+      external_reference: order.external_reference || undefined,
+      transaction_amount: Number(order.amount || 0),
+    };
+  });
