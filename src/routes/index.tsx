@@ -306,17 +306,14 @@ function Produto5Page() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f0faf0' }}>
 
-      {/* ── BARRA DE URGÊNCIA DUPLA ── */}
-      <div className="text-white py-2 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ backgroundColor: VERMELHO }}>
-        ⚠️ ATENÇÃO: Apenas {unitsLeft} kits restantes neste lote promocional — após esgotar, preço volta ao normal
-      </div>
+      {/* ── BARRA DE URGÊNCIA ── */}
       <div className="text-white py-2.5 px-4 text-center" style={{ background: `linear-gradient(90deg, ${VERDE_ESCURO} 0%, ${VERDE} 50%, ${VERDE_ESCURO} 100%)` }}>
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 flex-wrap">
-          <p className="text-sm md:text-base font-extrabold uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-            <Flame className="w-4 h-4 animate-pulse" style={{ color: AMARELO }} />
+          <p className="text-sm font-extrabold uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
+            <Flame className="w-4 h-4" style={{ color: AMARELO }} />
             Promoção Relâmpago Copa 2026 — FRETE GRÁTIS
           </p>
-          <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-lg text-sm font-black tabular-nums" style={{ color: AMARELO, border: `1px solid ${AMARELO}55` }}>
+          <div className="flex items-center gap-1.5 bg-black/30 px-2.5 py-1 rounded-md text-sm font-black tabular-nums" style={{ color: AMARELO }}>
             <Clock className="w-4 h-4" />
             <span>Expira em {mm}:{ss}</span>
           </div>
@@ -324,7 +321,7 @@ function Produto5Page() {
       </div>
 
       {/* ── HEADER ── */}
-      <header className="bg-white shadow-sm sticky top-[72px] z-50 border-b-4" style={{ borderColor: AMARELO }}>
+      <header className="bg-white shadow-sm sticky top-[44px] z-50 border-b-4" style={{ borderColor: AMARELO }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
             <div className="flex-1 flex items-center md:hidden">
@@ -446,13 +443,6 @@ function Produto5Page() {
               </p>
             </div>
 
-            {/* Alerta viewers */}
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ backgroundColor: '#fff3cd', border: `1.5px solid ${AMARELO}` }}>
-              <Eye className="w-4 h-4 shrink-0 animate-pulse" style={{ color: VERMELHO }} />
-              <p className="text-xs font-bold text-gray-800">
-                <span style={{ color: VERMELHO }}>{viewersCount} pessoas</span> estão vendo este produto agora — estoque se esgota rapidamente
-              </p>
-            </div>
 
             {/* Seletor de kit */}
             <div>
@@ -927,32 +917,6 @@ function Produto5Page() {
         </div>
       </footer>
 
-      {/* ── NOTIFICAÇÃO AO VIVO ── */}
-      {liveNotice && (
-        <div
-          key={liveNotice.id}
-          className="fixed left-3 right-3 sm:left-4 sm:right-auto sm:max-w-sm z-[60] pointer-events-none animate-in slide-in-from-bottom-4 fade-in duration-300"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 132px)' }}
-        >
-          <div className="rounded-xl bg-white shadow-2xl border-l-4 px-3 py-2.5 flex items-center gap-3" style={{ borderLeftColor: VERDE }}>
-            <div className="relative shrink-0">
-              <div className="h-9 w-9 rounded-full flex items-center justify-center text-white font-extrabold text-sm" style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${AZUL} 100%)`, fontFamily: 'Archivo Black, sans-serif' }}>
-                {liveNotice.name.charAt(0)}
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white animate-pulse" style={{ backgroundColor: VERDE }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-bold text-gray-900 leading-tight truncate">
-                {liveNotice.name} <span className="text-gray-500 font-normal">acabou de comprar</span>
-              </p>
-              <p className="text-[11px] text-gray-600 leading-tight truncate">
-                <strong style={{ color: VERDE }}>{liveNotice.packs} pacotes</strong> · {liveNotice.city} · há {liveNotice.ago}
-              </p>
-            </div>
-            <Check className="h-4 w-4 shrink-0" style={{ color: VERDE }} strokeWidth={3} />
-          </div>
-        </div>
-      )}
 
       {/* ── CTA MOBILE FIXO ── */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/98 backdrop-blur-md shadow-[0_-8px_24px_rgba(0,0,0,0.18)] border-t-4 z-50" style={{ borderColor: AMARELO }}>
