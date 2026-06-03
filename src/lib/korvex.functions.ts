@@ -144,14 +144,25 @@ export const createKorvexPixPayment = createServerFn({ method: 'POST' })
 
     const webhookUrl = `${getWebhookUrl()}?ref=${encodeURIComponent(pedidoId)}`;
 
+    // Formata campos para a Korvex
+    const rawPhone = data.payerPhone || tracking.phone || '';
+    const rawDoc = data.payerDocument || '';
+    // CPF formatado com pontos e traço: 000.000.000-00
+    const cpfDigits = rawDoc.replace(/\D/g, '');
+    const cpfFormatted = cpfDigits.length === 11
+      ? cpfDigits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      : rawDoc;
+    // Identificador curto (max 50 chars, só alfanumérico e hífen)
+    const identifier = pedidoId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
+
     const body = {
-      identifier: pedidoId,
+      identifier,
       amount: Number(data.unitPrice.toFixed(2)),
       client: {
-        name: data.payerName || tracking.name || 'Cliente',
+        name: (data.payerName || tracking.name || 'Cliente').slice(0, 100),
         email: data.payerEmail || tracking.email || undefined,
-        phone: data.payerPhone || tracking.phone || undefined,
-        document: data.payerDocument || undefined,
+        phone: rawPhone || undefined,
+        document: cpfFormatted || undefined,
       },
       products: [
         {
@@ -185,9 +196,22 @@ export const createKorvexPixPayment = createServerFn({ method: 'POST' })
         upstream = { raw: text };
       }
       if (!res.ok) {
-        console.error('[korvex-create][ERROR]', { httpStatus, response: upstream });
+        console.error('[korvex-create][ERROR]', {
+          httpStatus,
+          message: upstream?.message,
+          details: upstream?.details,
+          errorCode: upstream?.errorCode,
+          body_sent: JSON.stringify(body),
+          response: upstream,
+        });
+        // Monta mensagem legível incluindo details se existir
+        const details = upstream?.details
+          ? (Array.isArray(upstream.details)
+              ? upstream.details.map((d: any) => d?.message || JSON.stringify(d)).join(', ')
+              : JSON.stringify(upstream.details))
+          : null;
         const msg = upstream?.message || upstream?.error || `HTTP ${httpStatus}`;
-        throw new Error(`Falha ao gerar Pix (Korvex): ${msg}`);
+        throw new Error(`Falha ao gerar Pix (Korvex): ${msg}${details ? ` — ${details}` : ''}`);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
