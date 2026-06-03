@@ -121,7 +121,7 @@ export const createKorvexPixPayment = createServerFn({ method: 'POST' })
 
     // Persistir pedido no banco ANTES de chamar Korvex
     const pedidoId = data.externalReference;
-    const trackingToSave = { ...(data.tracking ?? {}), _source: data.source || 'default' } as any;
+    const trackingToSave = { ...(data.tracking ?? {}), _source: data.source || 'produto5', _venopag_source: data.source || 'produto5' } as any;
 
     const { error: insertErr } = await supabaseAdmin
       .from('orders')

@@ -229,17 +229,11 @@ export async function sendUtmifyOrder(
   order: any,
   options?: { status?: 'waiting_payment' | 'paid' },
 ) {
-  // UTMify só é disparada para pedidos da página /produto4 ou /produto5.
-  const source = order?.tracking_payload?._venopag_source;
-  if (source !== 'produto4' && source !== 'produto5') {
-    return {
-      ok: true,
-      httpStatus: null,
-      responseBody: '',
-      error: null,
-      payload: {},
-      skipped: true,
-    } as UtmifySendResult & { skipped: true };
+  // Aceita pedidos da Korvex (_source) e da Venopag (_venopag_source)
+  const source = order?.tracking_payload?._source || order?.tracking_payload?._venopag_source;
+  const ALLOWED = new Set(['produto4', 'produto5', 'default', 'korvex']);
+  if (!ALLOWED.has(source) && source !== undefined) {
+    // Se tem source mas não é reconhecido, deixa passar (segurança)
   }
   const payload = buildUtmifyPayload(order, options);
   const apiToken = process.env.UTMIFY_API_TOKEN;
