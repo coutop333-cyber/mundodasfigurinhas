@@ -1,9 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, User, ShoppingCart, Menu, Star, Check, Truck, Shield, Award, Package, ChevronLeft, ChevronRight, Gift, Mail, AlertTriangle, TrendingUp, Loader2, Trophy, Sparkles, Flame, Clock, MessageCircle, Lock, Zap, Eye, BadgeCheck, ArrowRight, Phone, ChevronDown } from 'lucide-react';
+import { Star, Check, Truck, Shield, Award, Package, ChevronLeft, ChevronRight, Loader2, Trophy, Sparkles, Flame, Clock, Lock, BadgeCheck, ChevronDown, MessageCircle, Gift, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { useMetaPixel } from '@/hooks/useMetaPixel';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
@@ -29,17 +27,17 @@ const HERO_IMAGE = promoHero;
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
-      { title: 'Figurinhas Copa 2026 · 30 Pacotes por R$127,90 com Frete Grátis | Eletros Jundiaí' },
-      { name: 'description', content: 'Complete seu álbum da Copa do Mundo FIFA 2026 mais rápido. Pacotes oficiais Panini com frete grátis e rastreio para todo o Brasil. Estoque promocional limitado.' },
-      { property: 'og:title', content: 'Complete seu álbum da Copa 2026 · Frete Grátis' },
-      { property: 'og:description', content: 'Pacotes oficiais Panini Copa do Mundo 2026 com frete grátis e rastreado.' },
+      { title: 'Figurinhas Copa 2026 · Pacotes Oficiais Panini com Frete Grátis' },
+      { name: 'description', content: 'Complete seu álbum da Copa do Mundo FIFA 2026. Pacotes oficiais Panini com frete grátis para todo o Brasil. Menor preço garantido.' },
+      { property: 'og:title', content: 'Figurinhas Copa 2026 · Frete Grátis' },
+      { property: 'og:description', content: 'Pacotes oficiais Panini Copa 2026 com frete grátis. Envio em 24h.' },
       { property: 'og:image', content: HERO_IMAGE },
     ],
     links: [
       { rel: 'preload', as: 'image', href: HERO_IMAGE, fetchpriority: 'high' } as any,
     ],
   }),
-  component: Produto5Page,
+  component: HomePage,
 });
 
 type Kit = {
@@ -104,10 +102,11 @@ const KITS: Kit[] = [
     pricePerPack: 'R$ 4,26',
     contentId: 'copa-2026-30pacotes',
     heroImage: promoHero30,
-    badge: 'Melhor custo-benefício',
+    badge: '⭐ Mais vendido',
   },
 ];
 
+const KIT_20 = KITS.find((k) => k.packs === 20)!;
 const KIT_30 = KITS.find((k) => k.packs === 30)!;
 
 const displayImagesByKit: Record<number, { image: string; title: string }[]> = {
@@ -116,100 +115,79 @@ const displayImagesByKit: Record<number, { image: string; title: string }[]> = {
   3: [{ image: promoHero, title: 'Kit 10 Pacotes Copa 2026' }],
 };
 
-const reviews = [
-  { name: 'Lucas Andrade', city: 'São Paulo · SP', text: 'Veio rapidíssimo e tudo lacrado. Tirei o Vini Jr brilhante no terceiro pacote. Tô amando!', rating: 5, ago: '2 dias' },
-  { name: 'Bruno Marques', city: 'Belo Horizonte · MG', text: 'Comprei pro meu filho e acabei colecionando junto. 20 pacotes rendem demais, valeu cada centavo.', rating: 5, ago: '1 dia' },
-  { name: 'Rafael Souza', city: 'Curitiba · PR', text: 'Na banca aqui da rua tá R$8 cada. Aqui sai por menos de R$5 cada. Preço imbatível!', rating: 5, ago: '3 dias' },
-  { name: 'Diego Pereira', city: 'Salvador · BA', text: 'Chegou em 4 dias em Salvador, embalado direitinho. Já é meu segundo pedido.', rating: 5, ago: '5 horas' },
-  { name: 'Vinícius Rocha', city: 'Porto Alegre · RS', text: 'Reviveu a infância. Tô colecionando com meus amigos do trabalho, virou febre aqui.', rating: 5, ago: '12 horas' },
-  { name: 'Henrique Costa', city: 'Recife · PE', text: 'Variadas mesmo, quase não veio repetida. Já estou perto de fechar o álbum!', rating: 5, ago: '1 dia' },
+const REVIEWS = [
+  { name: 'Lucas A.', city: 'São Paulo · SP', text: 'Veio rapidíssimo, tudo lacrado. Tirei o Vini Jr brilhante no 3º pacote. Produto 100% original!', rating: 5, ago: '2 dias' },
+  { name: 'Bruno M.', city: 'BH · MG', text: 'Comprei pro meu filho e acabei viciando. 20 pacotes rendem muito. Valeu cada centavo.', rating: 5, ago: '1 dia' },
+  { name: 'Rafael S.', city: 'Curitiba · PR', text: 'Na banca aqui tá R$8 cada. Aqui sai por R$4,85. Absurdo a diferença! Já é meu 2º pedido.', rating: 5, ago: '3 dias' },
+  { name: 'Diego P.', city: 'Salvador · BA', text: 'Chegou em 4 dias em Salvador, super bem embalado. Quase todas diferentes, muito boa variação!', rating: 5, ago: '5 horas' },
+  { name: 'Mariana L.', city: 'Rio · RJ', text: 'Presentei meu neto e ele ficou maluco! Emocional demais ver a felicidade dele abrindo os pacotes.', rating: 5, ago: '12 horas' },
+  { name: 'Henrique C.', city: 'Recife · PE', text: 'Produto oficial de verdade. Estou quase completando o álbum com 30 pacotes. Recomendo muito!', rating: 5, ago: '1 dia' },
 ];
 
-function Produto5Page() {
+function HomePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [email, setEmail] = useState('');
   const [generating, setGenerating] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewProduct, setReviewProduct] = useState<OrderProduct | null>(null);
   const formDataRef = useRef<{ nome?: string; email?: string; telefone?: string; cpf?: string } | null>(null);
   const eventIdRef = useRef<string | null>(null);
-  const KIT_20 = KITS.find((k) => k.packs === 20)!;
   const [selectedKitId, setSelectedKitId] = useState<number>(KIT_20.id);
   const KIT = KITS.find((k) => k.id === selectedKitId) ?? KITS[0];
   const displayImages = displayImagesByKit[selectedKitId] ?? displayImagesByKit[KITS[0].id];
   useEffect(() => { setCurrentImageIndex(0); }, [selectedKitId]);
+
   const { trackViewContent, trackAddToCart, trackInitiateCheckout, trackLead, trackPurchase } = useMetaPixel();
 
+  // Countdown — reinicia quando chega a zero
   const [timeLeft, setTimeLeft] = useState(15 * 60);
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const id = setInterval(() => setTimeLeft((p) => Math.max(0, p - 1)), 1000);
+    const id = setInterval(() => setTimeLeft((p) => p <= 1 ? 15 * 60 : p - 1), 1000);
     return () => clearInterval(id);
-  }, [timeLeft]);
+  }, []);
   const mm = Math.floor(timeLeft / 60).toString().padStart(2, '0');
   const ss = (timeLeft % 60).toString().padStart(2, '0');
 
-  const TOTAL_ESTOQUE = 50;
-  const [unitsLeft, setUnitsLeft] = useState(37);
-  const [viewersCount] = useState(Math.floor(Math.random() * 18) + 34);
-  const [liveNotice, setLiveNotice] = useState<{ id: number; name: string; city: string; packs: number; ago: string } | null>(null);
-  const noticeIdRef = useRef(0);
-
-  const BUYER_POOL = [
-    { name: 'Lucas A.', city: 'São Paulo · SP' },
-    { name: 'Bruno M.', city: 'Belo Horizonte · MG' },
-    { name: 'Rafael S.', city: 'Curitiba · PR' },
-    { name: 'Diego P.', city: 'Salvador · BA' },
-    { name: 'Vinícius R.', city: 'Porto Alegre · RS' },
-    { name: 'Henrique C.', city: 'Recife · PE' },
-    { name: 'Mariana L.', city: 'Rio de Janeiro · RJ' },
-    { name: 'Felipe T.', city: 'Fortaleza · CE' },
-    { name: 'Camila D.', city: 'Brasília · DF' },
-    { name: 'Pedro H.', city: 'Manaus · AM' },
-    { name: 'Juliana B.', city: 'Goiânia · GO' },
-    { name: 'André N.', city: 'Campinas · SP' },
-  ];
-  const PACK_OPTIONS = [10, 20, 30];
-
-  useEffect(() => {
-    let timeoutId: number | undefined;
-    let cancelled = false;
-    const schedule = () => {
-      const delay = 6000 + Math.random() * 12000;
-      timeoutId = window.setTimeout(() => {
-        if (cancelled) return;
-        const buyer = BUYER_POOL[Math.floor(Math.random() * BUYER_POOL.length)];
-        const packs = PACK_OPTIONS[Math.floor(Math.random() * PACK_OPTIONS.length)];
-        noticeIdRef.current += 1;
-        setLiveNotice({ id: noticeIdRef.current, name: buyer.name, city: buyer.city, packs, ago: `${Math.floor(Math.random() * 4) + 1} min` });
-        setUnitsLeft((prev) => Math.max(7, prev - 1));
-        window.setTimeout(() => setLiveNotice((cur) => (cur && cur.id === noticeIdRef.current ? null : cur)), 5500);
-        schedule();
-      }, delay);
-    };
-    const initial = window.setTimeout(schedule, 2500);
-    return () => { cancelled = true; window.clearTimeout(initial); if (timeoutId) window.clearTimeout(timeoutId); };
-  }, []);
-
-  const estoquePct = Math.max(8, Math.min(100, (unitsLeft / TOTAL_ESTOQUE) * 100));
+  const [unitsLeft, setUnitsLeft] = useState(23);
 
   useEffect(() => { captureTracking(); }, []);
 
+  // ViewContent no carregamento (dedup com event_id)
+  const viewContentFired = useRef(false);
   useEffect(() => {
-    trackViewContent({ content_name: KIT.quantity, content_ids: [KIT.contentId], content_type: 'product', value: KIT.price, currency: 'BRL' });
-    trackAddToCart({ content_name: KIT.quantity, content_ids: [KIT.contentId], value: KIT.price, currency: 'BRL', num_items: 1 });
-  }, [trackViewContent, trackAddToCart, KIT.quantity, KIT.contentId, KIT.price]);
+    if (viewContentFired.current) return;
+    viewContentFired.current = true;
+    const eventId = newEventId('view');
+    trackViewContent({
+      content_name: KIT_20.quantity,
+      content_ids: [KIT_20.contentId],
+      content_type: 'product',
+      value: KIT_20.price,
+      currency: 'BRL',
+      event_id: eventId,
+    });
+  }, [trackViewContent]);
+
+  // AddToCart ao trocar kit
+  useEffect(() => {
+    trackAddToCart({
+      content_name: KIT.quantity,
+      content_ids: [KIT.contentId],
+      value: KIT.price,
+      currency: 'BRL',
+      num_items: 1,
+    });
+  }, [KIT.id]);
 
   const createPixPayment = useServerFn(createKorvexPixPayment);
   const warmPixProxy = useServerFn(warmKorvexPix);
 
   useEffect(() => {
-    const key = 'efi_proxy_warmed_at';
+    const key = 'korvex_warmed_at';
     const last = Number(window.sessionStorage.getItem(key) || 0);
     if (Date.now() - last < 10 * 60 * 1000) return;
     window.sessionStorage.setItem(key, String(Date.now()));
-    const timer = window.setTimeout(() => void warmPixProxy(), 1200);
+    const timer = window.setTimeout(() => void warmPixProxy(), 1500);
     return () => window.clearTimeout(timer);
   }, [warmPixProxy]);
 
@@ -222,13 +200,22 @@ function Produto5Page() {
     setFormOpen(true);
   };
 
-  const handleFormConfirm = (formData: { nome?: string; email?: string; telefone?: string } | unknown) => {
-    formDataRef.current = (formData as { nome?: string; email?: string; telefone?: string; cpf?: string }) || {};
-    trackInitiateCheckout({ content_name: KIT.quantity, content_ids: [KIT.contentId], value: KIT.price, currency: 'BRL', num_items: 1 });
+  const handleFormConfirm = (formData: any) => {
+    formDataRef.current = formData || {};
+    const eventId = newEventId('checkout');
+    eventIdRef.current = eventId;
+    trackInitiateCheckout({
+      content_name: KIT.quantity,
+      content_ids: [KIT.contentId],
+      value: KIT.price,
+      currency: 'BRL',
+      num_items: 1,
+      event_id: eventId,
+    });
     setFormOpen(false);
     setReviewProduct({
       image: KIT.heroImage,
-      title: `${KIT.quantity} - Eletros Jundiaí`,
+      title: `${KIT.quantity} - Copa das Figurinhas`,
       variation: KIT.shortLabel,
       quantity: 1,
       unitPrice: KIT.pricePerUnit,
@@ -245,12 +232,6 @@ function Produto5Page() {
       eventIdRef.current = eventId;
       const tracking = captureTracking();
       const fd = formDataRef.current || {};
-      const trackingPayload = {
-        ...tracking,
-        ...(fd.nome ? { name: fd.nome } : {}),
-        ...(fd.email ? { email: fd.email } : {}),
-        ...(fd.telefone ? { phone: fd.telefone } : {}),
-      };
       const payment = await createPixPayment({
         data: {
           kitId: KIT.id,
@@ -261,7 +242,12 @@ function Produto5Page() {
           payerName: fd.nome,
           payerPhone: fd.telefone,
           payerDocument: fd.cpf,
-          tracking: trackingPayload as any,
+          tracking: {
+            ...tracking,
+            ...(fd.nome ? { name: fd.nome } : {}),
+            ...(fd.email ? { email: fd.email } : {}),
+            ...(fd.telefone ? { phone: fd.telefone } : {}),
+          } as any,
           source: 'produto5' as any,
         },
       });
@@ -277,7 +263,6 @@ function Produto5Page() {
         expires_at: payment.expires_at,
       };
     } catch (err) {
-      console.error(err);
       toast.error(err instanceof Error ? err.message : 'Erro ao gerar Pix. Tente novamente.');
       return null;
     } finally {
@@ -288,98 +273,83 @@ function Produto5Page() {
   const navigate = useNavigate();
 
   const handlePixApproved = (p: PixPaymentInfo) => {
-    trackPurchase({ content_name: KIT.quantity, content_ids: [KIT.contentId], value: p.transaction_amount, currency: 'BRL', num_items: 1, event_id: p.external_reference });
-    toast.success('Pagamento aprovado!');
+    trackPurchase({
+      content_name: KIT.quantity,
+      content_ids: [KIT.contentId],
+      value: p.transaction_amount,
+      currency: 'BRL',
+      num_items: 1,
+      event_id: p.external_reference,
+    });
+    setUnitsLeft((prev) => Math.max(5, prev - 1));
     setReviewOpen(false);
-    navigate({ to: '/obrigado', search: { ref: p.external_reference, id: String(p.id), value: p.transaction_amount, product: KIT.quantity, status: 'approved' }, replace: true });
-  };
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      trackLead({ content_name: 'Newsletter Signup', content_category: 'Engagement', value: 0, currency: 'BRL' });
-      toast.success('Inscrição realizada com sucesso!');
-      setEmail('');
-    }
+    navigate({
+      to: '/obrigado',
+      search: { ref: p.external_reference, id: String(p.id), value: p.transaction_amount, product: KIT.quantity, status: 'approved' },
+      replace: true,
+    });
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f0faf0' }}>
+    <div className="min-h-screen bg-white">
 
-      {/* ── BARRA DE URGÊNCIA ── */}
-      <div className="text-white py-2.5 px-4 text-center" style={{ background: `linear-gradient(90deg, ${VERDE_ESCURO} 0%, ${VERDE} 50%, ${VERDE_ESCURO} 100%)` }}>
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 flex-wrap">
-          <p className="text-sm font-extrabold uppercase tracking-wide flex items-center gap-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
+      {/* BARRA DE URGÊNCIA */}
+      <div className="text-white py-2.5 px-4 text-center" style={{ background: `linear-gradient(90deg, ${VERDE_ESCURO}, ${VERDE}, ${VERDE_ESCURO})` }}>
+        <div className="max-w-5xl mx-auto flex items-center justify-center gap-3 flex-wrap">
+          <span className="text-sm font-bold flex items-center gap-1.5">
             <Flame className="w-4 h-4" style={{ color: AMARELO }} />
-            Promoção Relâmpago Copa 2026 — FRETE GRÁTIS
-          </p>
-          <div className="flex items-center gap-1.5 bg-black/30 px-2.5 py-1 rounded-md text-sm font-black tabular-nums" style={{ color: AMARELO }}>
-            <Clock className="w-4 h-4" />
-            <span>Expira em {mm}:{ss}</span>
-          </div>
+            Promoção Copa 2026 — Frete Grátis para todo o Brasil
+          </span>
+          <span className="flex items-center gap-1 bg-black/25 px-2.5 py-1 rounded-md text-sm font-black tabular-nums" style={{ color: AMARELO }}>
+            <Clock className="w-3.5 h-3.5" /> {mm}:{ss}
+          </span>
         </div>
       </div>
 
-      {/* ── HEADER ── */}
-      <header className="bg-white shadow-sm sticky top-[44px] z-50 border-b-4" style={{ borderColor: AMARELO }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 flex items-center md:hidden">
-              <div className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full" style={{ backgroundColor: `${VERMELHO}15`, color: VERMELHO }}>
-                <Eye className="w-3 h-3" />
-                <span>{viewersCount} vendo agora</span>
-              </div>
-            </div>
-            <div className="hidden md:flex flex-1 items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full animate-pulse" style={{ backgroundColor: `${VERMELHO}15`, color: VERMELHO }}>
-                <Eye className="w-3.5 h-3.5" />
-                <span>{viewersCount} pessoas estão vendo agora</span>
-              </div>
-            </div>
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <h1 className="flex items-center justify-center">
-                <img src={logoPanini} alt="Eletros Jundiaí - Panini" className="h-10 md:h-14 w-auto" />
-              </h1>
-            </div>
-            <div className="flex-1 flex items-center justify-end gap-3">
-              <div className="hidden md:flex items-center gap-1 text-xs font-semibold text-green-700">
-                <Shield className="w-3.5 h-3.5" />
-                <span>Compra segura</span>
-              </div>
-              <button className="p-2 hover:bg-muted rounded-lg transition-colors relative" aria-label="Carrinho">
-                <ShoppingCart className="h-5 w-5 text-gray-700" />
-                <span className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" style={{ backgroundColor: VERDE }}>0</span>
-              </button>
-            </div>
+      {/* HEADER */}
+      <header className="bg-white border-b sticky top-[44px] z-50" style={{ borderColor: `${AMARELO}` }}>
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <img src={logoPanini} alt="Copa das Figurinhas" className="h-10 md:h-14 w-auto" />
+          <div className="flex items-center gap-3">
+            <a
+              href="https://wa.me/5511999999999?text=Olá! Quero comprar figurinhas da Copa 2026"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold text-white"
+              style={{ backgroundColor: '#25D366' }}
+            >
+              <MessageCircle className="w-4 h-4" /> Suporte
+            </a>
+            <span className="flex items-center gap-1 text-xs font-semibold text-green-700">
+              <Shield className="w-3.5 h-3.5" /> Compra segura
+            </span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+      <main className="max-w-5xl mx-auto px-4 py-5">
 
-        {/* ── FAIXA LICENÇA ── */}
-        <div className="mb-5 flex items-center justify-center gap-3 rounded-xl px-4 py-3 shadow-md" style={{ background: `linear-gradient(135deg, ${AZUL} 0%, #001a52 100%)`, border: `2px solid ${AMARELO}` }}>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${AMARELO}33` }}>
-            <Trophy className="h-4 w-4" style={{ color: AMARELO }} />
+        {/* HERO HEADLINE — gancho emocional acima da dobra */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase mb-3" style={{ backgroundColor: `${AZUL}`, color: AMARELO }}>
+            <Trophy className="w-3.5 h-3.5" /> Produto Oficial · Panini · FIFA World Cup 2026
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">Produto licenciado oficial</span>
-            <span className="text-sm md:text-base font-extrabold uppercase tracking-wide text-white" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-              Panini · FIFA World Cup <span style={{ color: AMARELO }}>2026</span>
-            </span>
-          </div>
-          <div className="ml-auto hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase" style={{ backgroundColor: `${AMARELO}22`, border: `1px solid ${AMARELO}55`, color: AMARELO }}>
-            <BadgeCheck className="w-3.5 h-3.5" /> Verificado
-          </div>
+          <h1 className="text-3xl md:text-4xl font-black leading-tight mb-2" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>
+            Complete seu álbum da Copa 2026
+            <span className="block" style={{ color: VERDE }}> pelo menor preço do Brasil</span>
+          </h1>
+          <p className="text-gray-600 text-base max-w-xl mx-auto">
+            Pacotes <strong>oficiais Panini lacrados</strong> · 7 cromos sortidos cada · todas as 48 seleções · <strong>frete grátis</strong> rastreado para qualquer estado.
+          </p>
         </div>
 
-        {/* ── PRODUTO + OFERTA ── */}
+        {/* GRID PRINCIPAL */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 mb-8">
 
-          {/* Galeria */}
-          <div>
-            <div className="rounded-2xl p-3 shadow-xl" style={{ background: 'white', border: `3px solid ${VERDE}` }}>
-              <div className="relative aspect-square mb-3 overflow-hidden rounded-xl bg-gray-50">
+          {/* COLUNA ESQUERDA — Imagem */}
+          <div className="space-y-3">
+            <div className="rounded-2xl overflow-hidden shadow-lg relative bg-gray-50" style={{ border: `3px solid ${VERDE}` }}>
+              <div className="relative aspect-square">
                 <img
                   src={displayImages[currentImageIndex]?.image}
                   alt={displayImages[currentImageIndex]?.title}
@@ -387,188 +357,148 @@ function Produto5Page() {
                   width={800} height={800} decoding="async"
                   {...(currentImageIndex === 0 ? { fetchPriority: 'high' as any } : { loading: 'lazy' as const })}
                 />
-                <button onClick={handlePreviousImage} aria-label="Imagem anterior" className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition"><ChevronLeft className="h-5 w-5" /></button>
-                <button onClick={handleNextImage} aria-label="Próxima imagem" className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition"><ChevronRight className="h-5 w-5" /></button>
-                <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide shadow-md" style={{ backgroundColor: AMARELO, color: AZUL }}>
-                  <Sparkles className="w-3.5 h-3.5" /> Oficial Panini
+                <button onClick={handlePreviousImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow"><ChevronLeft className="h-5 w-5 text-gray-700" /></button>
+                <button onClick={handleNextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full shadow"><ChevronRight className="h-5 w-5 text-gray-700" /></button>
+                <div className="absolute top-3 left-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase shadow" style={{ backgroundColor: AMARELO, color: AZUL }}>
+                  <Sparkles className="w-3 h-3" /> Oficial Panini
                 </div>
-                <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide shadow-md text-white" style={{ backgroundColor: VERMELHO }}>
-                  {KIT.discount}% OFF
+                <div className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase shadow text-white" style={{ backgroundColor: VERMELHO }}>
+                  -{KIT.discount}% OFF
                 </div>
-              </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {displayImages.map((item, index) => (
-                  <button key={index} onClick={() => setCurrentImageIndex(index)} className="aspect-square rounded-lg overflow-hidden border-2 bg-gray-50 transition" style={{ borderColor: currentImageIndex === index ? VERDE : 'transparent' }}>
-                    <img src={item.image} alt={`Miniatura: ${item.title}`} className="w-full h-full object-cover" width={120} height={120} loading="lazy" decoding="async" />
-                  </button>
-                ))}
               </div>
             </div>
 
-            {/* Garantia abaixo da imagem */}
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            {/* Rating + Avaliações */}
+            <div className="flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)}</div>
+              <span className="text-sm font-bold text-gray-800">4.9 · <span className="font-normal text-gray-600">2.341 avaliações verificadas</span></span>
+            </div>
+
+            {/* Selos de garantia */}
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { icon: Shield, label: 'Produto', sub: 'Oficial Panini' },
-                { icon: Truck, label: 'Frete', sub: 'Grátis' },
-                { icon: Lock, label: 'Pix', sub: '100% Seguro' },
+                { icon: Shield, label: 'Oficial Panini', sub: 'Licenciado FIFA' },
+                { icon: Truck, label: 'Frete Grátis', sub: 'Todo o Brasil' },
+                { icon: Package, label: 'Envio 24h', sub: 'Após Pix aprovado' },
               ].map((b, i) => (
                 <div key={i} className="flex flex-col items-center gap-1 rounded-xl py-3 px-2 text-center bg-white shadow-sm border border-gray-100">
                   <b.icon className="w-5 h-5" style={{ color: VERDE }} />
-                  <span className="text-[10px] font-extrabold uppercase text-gray-800">{b.label}</span>
-                  <span className="text-[10px] text-gray-500">{b.sub}</span>
+                  <span className="text-[10px] font-bold text-gray-800 leading-tight">{b.label}</span>
+                  <span className="text-[9px] text-gray-500">{b.sub}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Oferta */}
-          <div className="space-y-4 text-gray-900">
-            {/* Rating */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />)}</div>
-              <span className="text-sm font-semibold text-gray-700">4.9 · 2.341 avaliações</span>
-              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase text-white" style={{ backgroundColor: VERDE }}>
-                <Check className="w-3 h-3" /> Em estoque
-              </span>
-            </div>
+          {/* COLUNA DIREITA — Oferta */}
+          <div className="space-y-4">
 
-            {/* Título */}
+            {/* Seletor de Kit */}
             <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold mb-1 leading-tight" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>
-                Figurinhas Panini Copa 2026
-                <span className="block mt-1 text-xl md:text-2xl" style={{ color: VERDE }}>Pacotes Oficiais com Frete Grátis</span>
-              </h2>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                <strong>Produto lacrado direto da distribuidora.</strong> {KIT.stickers} figurinhas — 7 cromos por pacote — todas as 48 seleções — chance de foil brilhante.
-              </p>
-            </div>
-
-
-            {/* Seletor de kit */}
-            <div>
-              <span className="block text-xs font-extrabold uppercase tracking-widest mb-2" style={{ color: AZUL, fontFamily: 'Archivo Black, sans-serif' }}>
-                Escolha seu kit:
-              </span>
+              <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: AZUL }}>Escolha seu kit:</p>
               <div className="grid grid-cols-3 gap-2">
                 {KITS.map((k) => {
-                  const selected = k.id === selectedKitId;
+                  const sel = k.id === selectedKitId;
                   return (
                     <button
                       key={k.id}
-                      type="button"
                       onClick={() => setSelectedKitId(k.id)}
-                      aria-pressed={selected}
-                      className="relative text-left rounded-xl p-2.5 transition-all active:scale-[0.98]"
+                      className="relative rounded-xl p-2.5 text-left transition-all active:scale-[0.97]"
                       style={{
-                        background: selected ? `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)` : '#ffffff',
-                        border: `3px solid ${selected ? AMARELO : '#e5e7eb'}`,
-                        color: selected ? '#ffffff' : '#111827',
-                        boxShadow: selected ? '0 8px 20px rgba(0,156,59,0.35)' : '0 1px 2px rgba(0,0,0,0.05)',
+                        background: sel ? `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})` : '#fff',
+                        border: `2.5px solid ${sel ? AMARELO : '#e5e7eb'}`,
+                        color: sel ? '#fff' : '#111',
+                        boxShadow: sel ? `0 6px 18px rgba(0,156,59,0.3)` : '0 1px 2px rgba(0,0,0,0.05)',
                       }}
                     >
                       {k.badge && (
-                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase shadow" style={{ backgroundColor: VERMELHO, color: '#fff' }}>
-                          ⭐ {k.badge}
+                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: VERMELHO, color: '#fff' }}>
+                          {k.badge}
                         </span>
                       )}
-                      <span className="block text-sm font-black leading-none" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-                        {k.packs} pacotes
-                      </span>
-                      <span className="block text-[10px] mt-0.5 opacity-80">{k.stickers} figurinhas</span>
-                      <span className="block mt-2 text-base font-extrabold" style={{ fontFamily: 'Archivo Black, sans-serif', color: selected ? AMARELO : VERDE }}>
+                      <span className="block text-sm font-black" style={{ fontFamily: 'Archivo Black, sans-serif' }}>{k.packs} pacotes</span>
+                      <span className="block text-[10px] opacity-80 mt-0.5">{k.stickers} figurinhas</span>
+                      <span className="block mt-2 text-base font-black" style={{ color: sel ? AMARELO : VERDE, fontFamily: 'Archivo Black, sans-serif' }}>
                         R$ {k.price.toFixed(2).replace('.', ',')}
                       </span>
-                      <span className="block text-[9px] opacity-75">{k.pricePerPack}/pacote</span>
-                      {selected && (
-                        <span className="absolute top-2 right-2 h-4 w-4 rounded-full flex items-center justify-center" style={{ backgroundColor: AMARELO }}>
-                          <Check className="w-2.5 h-2.5" style={{ color: AZUL }} strokeWidth={3} />
-                        </span>
-                      )}
+                      <span className="block text-[9px] opacity-70">{k.pricePerPack}/pacote</span>
+                      {sel && <Check className="absolute top-2 right-2 w-3.5 h-3.5" strokeWidth={3} style={{ color: AMARELO }} />}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* BLOCO ESCASSEZ */}
-            <div className="relative overflow-hidden rounded-2xl p-4 shadow-xl" style={{ background: `linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%)`, border: `3px solid ${AMARELO}` }}>
-              <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-20" style={{ backgroundColor: AMARELO }} />
-              <div className="relative flex items-center gap-2 mb-2">
-                <Flame className="w-5 h-5 animate-pulse" style={{ color: AMARELO }} />
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/90" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-                  Últimas unidades deste lote
+            {/* ESCASSEZ */}
+            <div className="rounded-xl p-3 text-white" style={{ background: `linear-gradient(135deg, #b91c1c, #7f1d1d)`, border: `2px solid ${AMARELO}` }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase">
+                  <Flame className="w-3.5 h-3.5" style={{ color: AMARELO }} /> Estoque promocional
                 </span>
-                <span className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tabular-nums" style={{ backgroundColor: AMARELO, color: AZUL }}>
-                  <Clock className="w-3 h-3" /> {mm}:{ss}
-                </span>
+                <span className="text-xs font-black tabular-nums" style={{ color: AMARELO }}>{mm}:{ss}</span>
               </div>
-              <h3 className="relative text-xl font-black leading-tight text-white" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-                Apenas <span style={{ color: AMARELO }}>{unitsLeft} kits disponíveis</span> agora
-              </h3>
-              <p className="relative text-[11px] text-white/80 mt-0.5">Reposição somente após o início da Copa • preço volta ao normal</p>
-              <div className="relative mt-3">
-                <div className="h-3 rounded-full bg-white/15 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${estoquePct}%`, background: `linear-gradient(90deg, ${AMARELO} 0%, #ffae00 100%)`, boxShadow: '0 0 12px rgba(255,223,0,0.6)' }} />
-                </div>
-                <div className="flex items-center justify-between mt-1.5 text-[10px] font-bold">
-                  <span className="text-white/80">Vendidos: {TOTAL_ESTOQUE - unitsLeft}/{TOTAL_ESTOQUE}</span>
-                  <span className="flex items-center gap-1" style={{ color: AMARELO }}>
-                    <span className="inline-block h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: AMARELO }} />
-                    esgotando ao vivo
-                  </span>
-                </div>
+              <p className="text-sm font-black mb-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
+                Apenas <span style={{ color: AMARELO }}>{unitsLeft} kits</span> disponíveis hoje
+              </p>
+              <div className="h-2 rounded-full bg-white/20 overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${Math.max(10, (unitsLeft / 50) * 100)}%`, background: `linear-gradient(90deg, ${AMARELO}, #ffae00)` }} />
+              </div>
+              <div className="flex justify-between text-[10px] mt-1 opacity-80">
+                <span>Vendidos: {50 - unitsLeft}/50</span>
+                <span style={{ color: AMARELO }}>● esgotando ao vivo</span>
               </div>
             </div>
 
             {/* PREÇO */}
-            <div className="rounded-2xl p-5 shadow-xl" style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)`, border: `3px solid ${AMARELO}` }}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-white/80 line-through">De R$ {KIT.oldPrice.toFixed(2).replace('.', ',')}</span>
-                <span className="text-[11px] font-extrabold px-2 py-0.5 rounded uppercase" style={{ backgroundColor: AMARELO, color: AZUL }}>{KIT.discount}% OFF</span>
-                <span className="ml-auto text-[10px] font-bold text-white/80">Você economiza <strong style={{ color: AMARELO }}>R$ {KIT.savings.toFixed(2).replace('.', ',')}</strong></span>
+            <div className="rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, border: `3px solid ${AMARELO}` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold line-through opacity-70">De R$ {KIT.oldPrice.toFixed(2).replace('.', ',')}</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded uppercase" style={{ backgroundColor: AMARELO, color: AZUL }}>{KIT.discount}% OFF</span>
               </div>
-              <div className="flex items-baseline gap-1 leading-none">
-                <span className="text-xl font-extrabold text-white" style={{ fontFamily: 'Archivo Black, sans-serif' }}>R$</span>
-                <span className="text-6xl md:text-7xl font-black tracking-tight" style={{ fontFamily: 'Archivo Black, sans-serif', color: AMARELO, textShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}>{Math.floor(KIT.price)}</span>
-                <span className="text-3xl font-extrabold" style={{ fontFamily: 'Archivo Black, sans-serif', color: AMARELO }}>,{KIT.price.toFixed(2).split('.')[1]}</span>
+              <div className="flex items-baseline gap-1 leading-none mb-1">
+                <span className="text-lg font-bold">R$</span>
+                <span className="text-6xl font-black" style={{ fontFamily: 'Archivo Black, sans-serif', color: AMARELO, textShadow: '1px 1px 0 rgba(0,0,0,0.2)' }}>
+                  {Math.floor(KIT.price)}
+                </span>
+                <span className="text-2xl font-bold" style={{ color: AMARELO }}>,{KIT.price.toFixed(2).split('.')[1]}</span>
               </div>
-              <p className="mt-1 text-xs text-white/90 font-semibold">
-                = <span style={{ color: AMARELO }}>{KIT.pricePerPack} por pacote</span> · na banca custa R$ 8,00 cada
+              <p className="text-xs opacity-90 mb-3">
+                = <strong style={{ color: AMARELO }}>{KIT.pricePerPack} por pacote</strong> · você economiza R$ {KIT.savings.toFixed(2).replace('.', ',')}
               </p>
 
-              <div className="mt-3 flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white p-1.5">
-                  <img src={pixLogo} alt="Pix" className="h-full w-full object-contain" width={32} height={32} loading="lazy" decoding="async" />
+              <div className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white p-1.5 shrink-0">
+                  <img src={pixLogo} alt="Pix" className="h-full w-full object-contain" width={32} height={32} />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-extrabold uppercase tracking-wide text-white leading-tight" style={{ fontFamily: 'Archivo Black, sans-serif' }}>Preço exclusivo no Pix</p>
-                  <p className="text-[10px] text-white/90 leading-tight mt-0.5">Aprovação imediata · envio em até 24h úteis</p>
+                <div>
+                  <p className="text-sm font-black uppercase leading-tight">Preço exclusivo no Pix</p>
+                  <p className="text-[10px] opacity-80 mt-0.5">Aprovação imediata · envio em até 24h úteis</p>
                 </div>
               </div>
             </div>
 
             {/* FRETE GRÁTIS */}
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3 shadow-md" style={{ backgroundColor: AMARELO, border: `2px solid ${VERDE}` }}>
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: VERDE }}>
-                <Truck className="w-6 h-6" />
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ backgroundColor: AMARELO, border: `2px solid ${VERDE}` }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full text-white shrink-0" style={{ backgroundColor: VERDE }}>
+                <Truck className="w-5 h-5" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-extrabold uppercase tracking-wide leading-tight" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>Frete Grátis para todo o Brasil</p>
-                <p className="text-[11px] text-gray-800 leading-tight mt-0.5">Envio rastreado · chega em 3 a 7 dias úteis</p>
+              <div>
+                <p className="text-sm font-black uppercase leading-tight" style={{ color: AZUL }}>Frete Grátis para todo o Brasil</p>
+                <p className="text-[11px] text-gray-700">Envio rastreado · 3 a 7 dias úteis</p>
               </div>
-              <Check className="w-5 h-5 shrink-0 text-white" style={{ backgroundColor: VERDE, borderRadius: '50%', padding: '2px' }} strokeWidth={3} />
+              <Check className="w-5 h-5 ml-auto text-white rounded-full p-0.5 shrink-0" style={{ backgroundColor: VERDE }} strokeWidth={3} />
             </div>
 
-            {/* Bullets */}
-            <ul className="space-y-2 bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+            {/* BULLETS */}
+            <ul className="space-y-2 bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
               {[
-                <><strong>{KIT.stickers} figurinhas oficiais Panini</strong> — {KIT.packs} pacotes lacrados, 7 cromos cada</>,
-                <><strong>Todas as 48 seleções da Copa 2026</strong> — Brasil, Argentina, França e +45 países</>,
-                <><strong>Chance de raras brilhantes</strong> — legends, escudos foil e mascote da Copa</>,
-                <><strong>Direto da distribuidora</strong> — sem violação, sem cromos repetidos em sequência</>,
+                <><strong>{KIT.stickers} figurinhas oficiais Panini</strong> — {KIT.packs} pacotes lacrados de fábrica</>,
+                <><strong>Todas as 48 seleções</strong> da Copa 2026 — Brasil incluso</>,
+                <><strong>Chance de raras brilhantes</strong> — Legends, foil e mascote</>,
+                <><strong>Nota fiscal eletrônica</strong> — Garantia de procedência</>,
               ].map((t, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-gray-800">
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full mt-0.5" style={{ backgroundColor: VERDE }}>
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full mt-0.5 shrink-0" style={{ backgroundColor: VERDE }}>
                     <Check className="h-3 w-3 text-white" strokeWidth={4} />
                   </div>
                   <span>{t}</span>
@@ -576,376 +506,258 @@ function Produto5Page() {
               ))}
             </ul>
 
-            {/* Prova social recente */}
-            <div className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 border border-gray-200 shadow-sm">
-              <div className="flex -space-x-2">
-                {['#009c3b', '#ffdf00', '#002776', '#c0392b'].map((c, i) => (
-                  <span key={i} className="h-7 w-7 rounded-full ring-2 ring-white flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: c, color: c === '#ffdf00' ? '#002776' : '#fff' }}>
-                    {['L', 'B', 'R', 'M'][i]}
-                  </span>
-                ))}
-              </div>
-              <div className="text-xs text-gray-700 leading-tight">
-                <strong className="text-gray-900">312 colecionadores</strong> compraram nas últimas 24h
-                <div className="flex items-center gap-1 mt-0.5 text-[11px] text-gray-500">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: VERDE }} />
-                  Última compra há 2 minutos
-                </div>
+            {/* GARANTIA */}
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3 bg-blue-50 border border-blue-100">
+              <Shield className="w-8 h-8 text-blue-600 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-blue-900">Garantia de satisfação</p>
+                <p className="text-xs text-blue-700">Se o produto chegar diferente do descrito, resolvemos em até 7 dias. Sem burocracia.</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2.5">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-              <span><strong>Só {unitsLeft} unidades restantes.</strong> Ao esgotar, o preço volta para R$ {KIT.oldPrice.toFixed(2).replace('.', ',')}.</span>
-            </div>
-
-            {/* CTA desktop */}
-            <div className="hidden lg:block pt-1 space-y-3">
+            {/* CTA DESKTOP */}
+            <div className="hidden lg:block space-y-2">
               <Button
                 disabled={generating}
                 onClick={handleBuyClick}
-                className="w-full py-7 text-lg font-black shadow-2xl active:scale-[0.98] transition-transform uppercase tracking-wider disabled:opacity-90 text-white"
-                style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 8px 30px rgba(0,156,59,0.5)` }}
+                className="w-full py-7 text-lg font-black uppercase tracking-wide text-white shadow-xl active:scale-[0.98] transition-transform"
+                style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 8px 25px rgba(0,156,59,0.45)` }}
               >
-                {generating ? (<><Loader2 className="w-5 h-5 mr-2 animate-spin" />GERANDO PIX...</>) : `🏆 QUERO COMPLETAR MEU ÁLBUM — R$ ${KIT.price.toFixed(2).replace('.', ',')}`}
+                {generating ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Gerando Pix...</> : `🏆 QUERO MEU KIT — R$ ${KIT.price.toFixed(2).replace('.', ',')}`}
               </Button>
               <div className="flex items-center justify-center gap-4 text-[11px] text-gray-500">
-                <span className="flex items-center gap-1"><Lock className="w-3 h-3" style={{ color: VERDE }} /> Pagamento 100% seguro</span>
-                <span className="flex items-center gap-1"><Truck className="w-3 h-3" style={{ color: VERDE }} /> Frete grátis</span>
-                <span className="flex items-center gap-1"><Package className="w-3 h-3" style={{ color: VERDE }} /> Envio em 24h</span>
+                <span className="flex items-center gap-1"><Lock className="w-3 h-3 text-green-600" />Pagamento seguro</span>
+                <span className="flex items-center gap-1"><Truck className="w-3 h-3 text-green-600" />Frete grátis</span>
+                <span className="flex items-center gap-1"><Package className="w-3 h-3 text-green-600" />Envio em 24h</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── COMPARAÇÃO DE PREÇO ── */}
-        <div className="mb-8 rounded-2xl overflow-hidden shadow-lg border-2" style={{ borderColor: VERDE }}>
-          <div className="py-3 px-5 text-center font-extrabold uppercase text-white text-sm" style={{ backgroundColor: AZUL, fontFamily: 'Archivo Black, sans-serif' }}>
-            💰 Comparativo de preço — por que comprar aqui?
+        {/* COMPARATIVO DE PREÇO */}
+        <div className="mb-10 rounded-2xl overflow-hidden shadow border border-gray-100">
+          <div className="py-3 px-5 text-center font-black text-white text-sm uppercase" style={{ backgroundColor: AZUL }}>
+            💰 Por que aqui é mais barato?
           </div>
           <div className="bg-white divide-y divide-gray-100">
             {[
-              { local: 'Banca de jornal', pricePerPack: 'R$ 8,00', total: `R$ ${(8 * KIT.packs).toFixed(2).replace('.', ',')}`, highlight: false },
-              { local: 'Papelaria / livraria', pricePerPack: 'R$ 7,50', total: `R$ ${(7.5 * KIT.packs).toFixed(2).replace('.', ',')}`, highlight: false },
-              { local: 'Eletros Jundiaí 🏆', pricePerPack: KIT.pricePerPack, total: `R$ ${KIT.price.toFixed(2).replace('.', ',')}`, highlight: true },
-            ].map((row, i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-3" style={row.highlight ? { backgroundColor: `${VERDE}10` } : {}}>
-                <span className="text-sm font-semibold" style={{ color: row.highlight ? VERDE : '#374151' }}>
-                  {row.highlight && <Check className="inline w-4 h-4 mr-1" style={{ color: VERDE }} strokeWidth={3} />}
-                  {row.local}
-                </span>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-gray-500">{row.pricePerPack}/pacote</span>
-                  <span className={`text-sm font-bold ${row.highlight ? '' : 'line-through text-gray-400'}`} style={row.highlight ? { color: VERDE } : {}}>
-                    {row.total}
-                  </span>
+              { local: 'Banca de jornal', ppk: 'R$ 8,00', total: `R$ ${(8 * KIT.packs).toFixed(0)}`, ok: false },
+              { local: 'Papelaria / livraria', ppk: 'R$ 7,50', total: `R$ ${(7.5 * KIT.packs).toFixed(0)}`, ok: false },
+              { local: '🏆 Copa das Figurinhas', ppk: KIT.pricePerPack, total: `R$ ${KIT.price.toFixed(2).replace('.', ',')}`, ok: true },
+            ].map((r, i) => (
+              <div key={i} className="flex items-center justify-between px-5 py-3" style={r.ok ? { backgroundColor: `${VERDE}0d` } : {}}>
+                <span className="text-sm font-semibold" style={{ color: r.ok ? VERDE : '#6b7280' }}>{r.local}</span>
+                <div className="flex items-center gap-6">
+                  <span className="text-xs text-gray-500 hidden sm:block">{r.ppk}/pacote</span>
+                  <span className={`text-sm font-bold ${r.ok ? '' : 'line-through text-gray-400'}`} style={r.ok ? { color: VERDE } : {}}>{r.total}</span>
                 </div>
               </div>
             ))}
           </div>
-          <div className="py-3 px-5 text-center text-sm font-bold text-white" style={{ backgroundColor: VERDE }}>
-            Você economiza até <strong style={{ color: AMARELO }}>R$ {((8 - parseFloat(KIT.pricePerPack.replace('R$ ', '').replace(',', '.'))) * KIT.packs).toFixed(2).replace('.', ',')} neste kit</strong> comprando aqui
+          <div className="py-2.5 px-5 text-center text-xs font-bold text-white" style={{ backgroundColor: VERDE }}>
+            Você economiza até <strong style={{ color: AMARELO }}>R$ {((8 - parseFloat(KIT.pricePerPack.replace('R$ ', '').replace(',', '.'))) * KIT.packs).toFixed(0)} neste kit</strong>
           </div>
         </div>
 
-        {/* ── TRUST BADGES ── */}
-        <div className="mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-            {[
-              { icon: Shield, title: 'Produto Oficial', description: 'Licenciado Panini / FIFA', color: VERDE },
-              { icon: Truck, title: 'Frete Grátis', description: 'Rastreado · todo Brasil', color: AZUL },
-              { icon: Package, title: 'Envio em 24h', description: 'Após confirmação Pix', color: VERDE },
-              { icon: MessageCircle, title: 'Suporte WhatsApp', description: 'Atendimento humano', color: AZUL },
-              { icon: Lock, title: 'Pagamento Seguro', description: 'Pix criptografado SSL', color: VERDE },
-              { icon: Award, title: '+12.500 vendas', description: 'Loja verificada', color: AZUL },
-            ].map((badge, index) => (
-              <Card key={index} className="border-2 shadow-sm" style={{ borderColor: badge.color }}>
-                <CardContent className="p-4 text-center">
-                  <badge.icon className="h-8 w-8 mx-auto mb-2" style={{ color: badge.color }} />
-                  <h4 className="font-bold text-sm mb-1 text-gray-900">{badge.title}</h4>
-                  <p className="text-xs text-gray-600">{badge.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* ── CTA MID-PAGE ── */}
-        <div className="mb-8 rounded-2xl p-6 md:p-8 text-center shadow-2xl" style={{ background: `linear-gradient(135deg, ${AZUL} 0%, #001a52 100%)`, border: `3px solid ${AMARELO}` }}>
-          <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase mb-4" style={{ backgroundColor: VERMELHO, color: '#fff' }}>
-            <Zap className="w-3.5 h-3.5" /> Oferta expirando em {mm}:{ss}
-          </div>
-          <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-            Complete seu álbum da Copa 2026
-          </h3>
-          <p className="text-white/90 mb-5 max-w-xl mx-auto text-sm">
-            <strong style={{ color: AMARELO }}>Apenas {unitsLeft} kits restantes.</strong> Com frete grátis e envio em 24h — mais barato que qualquer banca do Brasil.
+        {/* CTA SECUNDÁRIO */}
+        <div className="mb-10 rounded-2xl p-7 text-center text-white shadow-xl" style={{ background: `linear-gradient(135deg, ${AZUL}, #001a52)`, border: `3px solid ${AMARELO}` }}>
+          <Trophy className="h-10 w-10 mx-auto mb-3" style={{ color: AMARELO }} />
+          <h2 className="text-2xl font-black mb-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>A oferta termina em {mm}:{ss}</h2>
+          <p className="text-white/80 text-sm mb-5">
+            <strong style={{ color: AMARELO }}>Apenas {unitsLeft} kits restantes.</strong> Após o estoque acabar, o preço volta ao normal.
           </p>
-          <Button
-            disabled={generating}
-            onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
-            className="px-10 py-6 text-lg font-black shadow-2xl uppercase tracking-wider text-white active:scale-[0.98] transition-transform"
-            style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 8px 30px rgba(0,156,59,0.5)` }}
-          >
-            {generating ? (<><Loader2 className="w-5 h-5 mr-2 animate-spin" />GERANDO PIX...</>) : '🏆 QUERO 30 PACOTES POR R$ 127,90'}
-          </Button>
-          <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-white/60">
-            <span><Lock className="inline w-3 h-3 mr-1" />Pagamento seguro</span>
-            <span><Truck className="inline w-3 h-3 mr-1" />Frete grátis</span>
-            <span><Package className="inline w-3 h-3 mr-1" />Envio em 24h</span>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
+            <Button
+              disabled={generating}
+              onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
+              className="flex-1 py-5 text-base font-black uppercase text-white"
+              style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 6px 20px rgba(0,156,59,0.4)` }}
+            >
+              🏆 30 pacotes — R$ 127,90
+            </Button>
+            <Button
+              disabled={generating}
+              onClick={() => { setSelectedKitId(KIT_20.id); handleBuyClick(); }}
+              variant="outline"
+              className="flex-1 py-5 text-base font-bold uppercase border-2"
+              style={{ borderColor: AMARELO, color: AMARELO, backgroundColor: 'transparent' }}
+            >
+              20 pacotes — R$ 97,00
+            </Button>
           </div>
         </div>
 
-        {/* ── BANNER EMOÇÃO ── */}
-        <div className="mb-8 rounded-2xl overflow-hidden shadow-lg" style={{ border: `3px solid ${VERDE}` }}>
-          <div className="p-6 md:p-8 text-white" style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)` }}>
-            <span className="text-xs font-bold uppercase tracking-widest mb-2 block" style={{ color: AMARELO }}>🇧🇷 O Brasil em campo</span>
-            <h3 className="text-2xl md:text-3xl font-extrabold mb-3 leading-tight" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-              A Copa só começa quando o álbum chega em casa.
-            </h3>
-            <p className="text-white/90 text-sm leading-relaxed mb-4">
-              Junte a família, abra os pacotes, troque com os amigos e viva a emoção da maior coleção da história. <strong style={{ color: AMARELO }}>20 ou 30 pacotes</strong> — você escolhe seu kit e a gente entrega na sua porta com frete zero.
-            </p>
-            <button onClick={handleBuyClick} className="inline-flex items-center gap-2 font-extrabold uppercase text-sm px-5 py-2.5 rounded-xl transition-all active:scale-[0.98]" style={{ backgroundColor: AMARELO, color: AZUL, fontFamily: 'Archivo Black, sans-serif' }}>
-              Comprar agora <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* ── DESCRIÇÃO ── */}
-        <div className="mb-8">
-          <Card className="shadow-md border-2" style={{ borderColor: VERDE }}>
-            <CardContent className="p-6 md:p-8">
-              <h3 className="text-xl font-extrabold mb-3" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>O que você recebe no kit</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                {[
-                  `${KIT.packs} pacotes oficiais Panini Copa do Mundo FIFA 2026, lacrados de fábrica`,
-                  '7 cromos sortidos por pacote — variedade garantida',
-                  'Cromos de todas as 48 seleções classificadas',
-                  'Chance real de figurinhas brilhantes (foil), legends e mascote',
-                  'Embalagem original da coleção 2026',
-                  'Frete grátis e rastreado para todo o Brasil',
-                  'Nota fiscal eletrônica · garantia de procedência',
-                ].map((t, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check className="h-5 w-5 shrink-0 mt-0.5" style={{ color: VERDE }} strokeWidth={3} />
-                    <span>{t}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ── AVALIAÇÕES ── */}
-        <div className="mb-8">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl md:text-3xl font-extrabold mb-2" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>O QUE OS COLECIONADORES DIZEM</h3>
-            <div className="flex items-center justify-center gap-2">
-              <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />)}</div>
-              <span className="text-lg font-bold text-gray-900">4.9 / 5.0</span>
-              <span className="text-sm text-gray-600">· 2.341 avaliações verificadas</span>
-            </div>
+        {/* AVALIAÇÕES */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-black text-center mb-2" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>
+            O que os colecionadores dizem
+          </h2>
+          <div className="flex items-center justify-center gap-2 mb-5">
+            <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />)}</div>
+            <span className="font-bold text-gray-800">4.9 / 5.0 · 2.341 avaliações</span>
           </div>
 
-          {/* Barra de rating */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 max-w-sm mx-auto">
-            {[{ stars: 5, pct: 91 }, { stars: 4, pct: 7 }, { stars: 3, pct: 2 }].map((r) => (
-              <div key={r.stars} className="flex items-center gap-3 mb-1.5">
-                <span className="text-xs font-bold w-8 text-right text-gray-600">{r.stars}★</span>
+          {/* Distribuição */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 max-w-xs mx-auto">
+            {[{ s: 5, p: 91 }, { s: 4, p: 7 }, { s: 3, p: 2 }].map((r) => (
+              <div key={r.s} className="flex items-center gap-3 mb-1.5">
+                <span className="text-xs text-gray-600 w-6">{r.s}★</span>
                 <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${r.pct}%`, backgroundColor: '#facc15' }} />
+                  <div className="h-full rounded-full bg-yellow-400" style={{ width: `${r.p}%` }} />
                 </div>
-                <span className="text-xs text-gray-500 w-8">{r.pct}%</span>
+                <span className="text-xs text-gray-500 w-7">{r.p}%</span>
               </div>
             ))}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {reviews.map((r, i) => (
-              <Card key={i} className="border shadow-sm hover:shadow-md transition">
-                <CardContent className="p-5 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex gap-0.5">{[...Array(r.rating)].map((_, j) => <Star key={j} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)}</div>
-                    <span className="text-[10px] text-gray-400">há {r.ago}</span>
+            {REVIEWS.map((r, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex gap-0.5">{[...Array(r.rating)].map((_, j) => <Star key={j} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)}</div>
+                  <span className="text-[10px] text-gray-400">há {r.ago}</span>
+                </div>
+                <p className="text-sm text-gray-700 italic flex-1 mb-3">"{r.text}"</p>
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{r.name}</p>
+                    <p className="text-[10px] text-gray-500">{r.city}</p>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed mb-4 flex-1 italic">"{r.text}"</p>
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div>
-                      <span className="font-semibold text-sm text-gray-900 block">{r.name}</span>
-                      <span className="text-[10px] text-gray-500">{r.city}</span>
-                    </div>
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: VERDE }}>
-                      <Check className="w-2.5 h-2.5" /> Verificada
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+                  <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full text-white flex items-center gap-1" style={{ backgroundColor: VERDE }}>
+                    <Check className="w-2.5 h-2.5" /> Verificada
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
 
-          {/* CTA pós-reviews */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 mb-3">Junte-se a +12.500 colecionadores satisfeitos</p>
             <Button
               disabled={generating}
               onClick={handleBuyClick}
-              className="px-8 py-5 text-base font-black shadow-xl uppercase tracking-wider text-white active:scale-[0.98] transition-transform"
-              style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)`, fontFamily: 'Archivo Black, sans-serif' }}
+              className="px-8 py-5 text-base font-black uppercase text-white"
+              style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, fontFamily: 'Archivo Black, sans-serif' }}
             >
-              {generating ? (<><Loader2 className="w-5 h-5 mr-2 animate-spin" />GERANDO PIX...</>) : '🏆 QUERO MEU KIT AGORA'}
+              🏆 QUERO MEU KIT AGORA
             </Button>
           </div>
         </div>
 
-        {/* ── FAQ ── */}
-        <div className="mb-8">
-          <h3 className="text-xl font-extrabold mb-5 text-center" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>Perguntas frequentes</h3>
-          <div className="space-y-3 max-w-3xl mx-auto">
+        {/* FAQ */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-black text-center mb-5" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>Perguntas frequentes</h2>
+          <div className="space-y-2 max-w-2xl mx-auto">
             {[
-              { q: 'As figurinhas são oficiais?', a: 'Sim. São pacotes oficiais Panini licenciados pela FIFA para a Copa do Mundo 2026, recebidos diretamente da distribuidora oficial. Cada pacote vem lacrado de fábrica.' },
-              { q: 'Em quanto tempo recebo?', a: 'Despachamos em até 24h úteis após a confirmação do Pix. O prazo de entrega é de 3 a 7 dias úteis para todo o Brasil, com código de rastreio enviado por WhatsApp.' },
-              { q: 'Posso pagar de outra forma?', a: 'Esta oferta promocional é válida apenas para pagamento via Pix (aprovação imediata). O Pix garante o desconto e a aprovação na hora.' },
-              { q: 'O frete é grátis mesmo?', a: 'Sim! Frete grátis para todas as regiões do Brasil, sem valor mínimo extra. Você paga apenas o valor do kit.' },
-              { q: 'E se eu quiser devolver?', a: 'Se o produto chegar diferente do descrito ou com defeito de fabricação, entre em contato pelo WhatsApp em até 7 dias. Resolvemos sem burocracia.' },
+              { q: 'As figurinhas são originais Panini?', a: 'Sim! Produto 100% oficial Panini com licença FIFA. Pacotes lacrados de fábrica, enviados diretamente da distribuidora autorizada.' },
+              { q: 'Em quanto tempo chega?', a: 'Despachamos em até 24h úteis após o Pix ser confirmado. Prazo de entrega: 3 a 7 dias úteis para todo o Brasil, com código de rastreio no WhatsApp.' },
+              { q: 'O frete é realmente grátis?', a: 'Sim, 100% grátis para todos os estados do Brasil, sem pedido mínimo adicional.' },
+              { q: 'Posso pagar de outro jeito?', a: 'Esta promoção é exclusiva para Pix — é o que permite oferecer esse preço. Pix garante aprovação imediata e envio no mesmo dia.' },
+              { q: 'E se eu quiser trocar ou devolver?', a: 'Se o produto chegar diferente do descrito ou com defeito, entre em contato pelo WhatsApp em até 7 dias. Resolvemos sem burocracia.' },
             ].map((f, i) => (
-              <details key={i} className="bg-white rounded-xl border-2 p-4 shadow-sm group" style={{ borderColor: '#e5e7eb' }}>
-                <summary className="cursor-pointer font-bold text-gray-900 list-none flex items-center justify-between text-sm">
-                  <span>{f.q}</span>
-                  <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" style={{ color: VERDE }} />
+              <details key={i} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm group cursor-pointer">
+                <summary className="font-bold text-gray-900 list-none flex items-center justify-between text-sm">
+                  {f.q}
+                  <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 shrink-0 ml-2" />
                 </summary>
-                <p className="mt-3 text-sm text-gray-700 leading-relaxed">{f.a}</p>
+                <p className="mt-3 text-sm text-gray-600 leading-relaxed">{f.a}</p>
               </details>
             ))}
           </div>
         </div>
 
-        {/* ── ÚLTIMO CTA URGÊNCIA ── */}
-        <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl" style={{ border: `4px solid ${AMARELO}` }}>
-          <div className="py-3 px-5 text-center font-black uppercase text-white text-sm flex items-center justify-center gap-2" style={{ backgroundColor: VERMELHO, fontFamily: 'Archivo Black, sans-serif' }}>
-            <Flame className="w-4 h-4 animate-pulse" /> NÃO PERCA — APENAS {unitsLeft} KITS RESTANTES
+        {/* ÚLTIMO CTA */}
+        <div className="mb-8 rounded-2xl overflow-hidden shadow-xl" style={{ border: `3px solid ${AMARELO}` }}>
+          <div className="py-2.5 px-5 text-center font-black text-white text-sm flex items-center justify-center gap-2" style={{ backgroundColor: VERMELHO }}>
+            <Flame className="w-4 h-4" /> SÓ {unitsLeft} KITS RESTANTES — OFERTA EXPIRA EM {mm}:{ss}
           </div>
-          <div className="p-6 md:p-8 text-center" style={{ background: `linear-gradient(135deg, ${AZUL} 0%, #001a52 100%)` }}>
-            <Trophy className="h-12 w-12 mx-auto mb-3" style={{ color: AMARELO }} />
-            <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-              Última chance de pegar no preço promocional
+          <div className="p-7 text-center" style={{ background: `linear-gradient(135deg, ${AZUL}, #001a52)` }}>
+            <h3 className="text-2xl font-black text-white mb-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
+              Não fique sem o seu kit
             </h3>
-            <p className="text-white/80 text-sm mb-1">Timer: <span className="font-black tabular-nums" style={{ color: AMARELO }}>{mm}:{ss}</span></p>
-            <p className="text-white/90 mb-6 max-w-lg mx-auto text-sm">
-              Depois que o estoque acabar, o preço volta para R$ {KIT_30.oldPrice.toFixed(2).replace('.', ',')}. Frete grátis · aprovação imediata no Pix.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+            <p className="text-white/80 text-sm mb-5">Frete grátis · aprovação imediata · envio em 24h</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
               <Button
                 disabled={generating}
                 onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
-                className="flex-1 py-5 text-base font-black shadow-2xl uppercase tracking-wider text-white active:scale-[0.98] transition-transform"
-                style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 8px 30px rgba(0,156,59,0.5)` }}
+                className="flex-1 py-5 text-base font-black uppercase text-white"
+                style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, boxShadow: `0 6px 20px rgba(0,156,59,0.4)` }}
               >
-                {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : '🏆 30 PACOTES — R$ 127,90'}
+                🏆 30 pacotes — R$ 127,90
               </Button>
               <Button
                 disabled={generating}
                 onClick={() => { setSelectedKitId(KIT_20.id); handleBuyClick(); }}
                 variant="outline"
-                className="flex-1 py-5 text-base font-black uppercase tracking-wider border-2 active:scale-[0.98] transition-transform"
-                style={{ borderColor: AMARELO, color: AMARELO, fontFamily: 'Archivo Black, sans-serif', backgroundColor: 'transparent' }}
+                className="flex-1 py-5 text-base font-bold uppercase border-2"
+                style={{ borderColor: AMARELO, color: AMARELO, backgroundColor: 'transparent' }}
               >
-                20 PACOTES — R$ 97,00
+                20 pacotes — R$ 97,00
               </Button>
-            </div>
-            <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-white/50">
-              <span><Lock className="inline w-3 h-3 mr-1" />100% seguro</span>
-              <span><Truck className="inline w-3 h-3 mr-1" />Frete grátis</span>
-              <span><Package className="inline w-3 h-3 mr-1" />Envio em 24h</span>
             </div>
           </div>
         </div>
-
-        {/* ── NEWSLETTER ── */}
-        <div className="mb-8">
-          <Card className="border-none shadow-lg text-white" style={{ background: `linear-gradient(135deg, ${AZUL} 0%, #001a52 100%)` }}>
-            <CardContent className="p-6 md:p-8 text-center">
-              <Mail className="h-10 w-10 mx-auto mb-3" style={{ color: AMARELO }} />
-              <h3 className="text-xl font-extrabold mb-2" style={{ fontFamily: 'Archivo Black, sans-serif' }}>Avise-me quando chegar novo lote</h3>
-              <p className="text-white/90 mb-5 max-w-md mx-auto text-sm">Cadastre-se para receber prioridade de compra e descontos exclusivos na próxima remessa.</p>
-              <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <Input type="email" placeholder="Seu melhor e-mail" required value={email} onChange={(e) => setEmail(e.target.value)} className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus-visible:ring-white" />
-                <Button type="submit" className="font-bold text-white" style={{ backgroundColor: VERDE }}>Inscrever-se</Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
       </main>
 
-      <footer className="bg-[#0a0a0a] text-white mt-6 pb-36 lg:pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+      {/* FOOTER */}
+      <footer className="bg-gray-900 text-white py-10 pb-32 lg:pb-10">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
-              <h4 className="text-xl font-bold mb-3 tracking-tight" style={{ fontFamily: 'Archivo Black, sans-serif' }}>
-                <span style={{ color: VERDE }}>ELETROS</span> <span style={{ color: AMARELO }}>JUNDIAÍ</span>
-              </h4>
-              <p className="text-sm text-gray-400 leading-relaxed">Produtos oficiais com preço justo, garantia e entrega rápida para todo o Brasil.</p>
+              <p className="font-black text-lg mb-2" style={{ color: VERDE }}>COPA DAS FIGURINHAS</p>
+              <p className="text-sm text-gray-400">Produto oficial Panini · FIFA World Cup 2026 · Entrega para todo o Brasil.</p>
             </div>
             <div>
-              <span className="block font-semibold mb-4 text-gray-100 text-sm">Institucional</span>
-              <ul className="space-y-2.5 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Nossa história</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Garantia</a></li>
+              <p className="font-semibold mb-3 text-sm">Atendimento</p>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Rastrear pedido</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Trocas e devoluções</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Política de privacidade</a></li>
               </ul>
             </div>
             <div>
-              <span className="block font-semibold mb-4 text-gray-100 text-sm">Atendimento</span>
-              <ul className="space-y-2.5 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Trocas e devoluções</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Prazos de entrega</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Rastrear pedido</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Fale conosco</a></li>
-              </ul>
-            </div>
-            <div>
-              <span className="block font-semibold mb-4 text-gray-100 text-sm">Contato</span>
-              <ul className="space-y-2.5 text-sm text-gray-400">
-                <li>Instagram: @eletrojundiai</li>
-                <li>E-mail: suporte@eletrojundiai.shop</li>
-              </ul>
+              <p className="font-semibold mb-3 text-sm">Contato</p>
+              <a
+                href="https://wa.me/5511999999999"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white"
+                style={{ backgroundColor: '#25D366' }}
+              >
+                <MessageCircle className="w-4 h-4" /> WhatsApp
+              </a>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-5 text-center text-xs text-gray-500">
-            <p>&copy; 2026 Eletros Jundiaí. Todos os direitos reservados. Produto oficial Panini · FIFA World Cup 2026.</p>
+            © 2026 Copa das Figurinhas. Produto oficial Panini · FIFA World Cup 2026.
           </div>
         </div>
       </footer>
 
-
-      {/* ── CTA MOBILE FIXO ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/98 backdrop-blur-md shadow-[0_-8px_24px_rgba(0,0,0,0.18)] border-t-4 z-50" style={{ borderColor: AMARELO }}>
-        <div className="flex items-center justify-between mb-2 px-1 gap-2">
-          <div className="min-w-0">
-            <span className="text-[10px] uppercase font-extrabold tracking-wider flex items-center gap-1" style={{ color: VERMELHO, fontFamily: 'Archivo Black, sans-serif' }}>
-              <Flame className="w-3 h-3 animate-pulse" /> Só {unitsLeft} restantes · frete grátis
+      {/* CTA MOBILE FIXO */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3 bg-white border-t-4 shadow-[0_-6px_20px_rgba(0,0,0,0.12)] z-50" style={{ borderColor: AMARELO }}>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <div>
+            <span className="text-[10px] font-black uppercase flex items-center gap-1" style={{ color: VERDE }}>
+              <Flame className="w-3 h-3" /> {KIT.packs} pacotes · frete grátis
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-xs text-gray-400 line-through">R$ {KIT.oldPrice.toFixed(2).replace('.', ',')}</span>
               <span className="text-xl font-black" style={{ color: VERDE, fontFamily: 'Archivo Black, sans-serif' }}>R$ {KIT.price.toFixed(2).replace('.', ',')}</span>
-              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase" style={{ backgroundColor: VERMELHO, color: '#fff' }}>-{Math.round((1 - KIT.price / KIT.oldPrice) * 100)}%</span>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: VERMELHO, color: '#fff' }}>-{KIT.discount}%</span>
             </div>
           </div>
-          <div className="flex flex-col items-end shrink-0">
-            <div className="flex items-center gap-1 text-[10px] font-black" style={{ color: VERMELHO }}>
-              <Clock className="w-3 h-3" />
-              <span className="tabular-nums">{mm}:{ss}</span>
-            </div>
-            <span className="text-[9px] text-gray-500 leading-tight">termina em</span>
+          <div className="text-right">
+            <span className="text-[10px] font-black tabular-nums" style={{ color: VERMELHO }}>{mm}:{ss}</span>
+            <p className="text-[9px] text-gray-500">termina em</p>
           </div>
         </div>
         <Button
           disabled={generating}
           onClick={handleBuyClick}
-          className="w-full py-6 text-base font-black active:scale-[0.98] shadow-lg transition-transform uppercase tracking-wide disabled:opacity-90 text-white"
-          style={{ background: `linear-gradient(135deg, ${VERDE} 0%, ${VERDE_ESCURO} 100%)`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 4px 20px rgba(0,156,59,0.5)` }}
+          className="w-full py-6 text-base font-black uppercase text-white active:scale-[0.98] transition-transform"
+          style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 4px 15px rgba(0,156,59,0.45)` }}
         >
-          {generating ? (<><Loader2 className="w-5 h-5 mr-2 animate-spin" />GERANDO PIX...</>) : '🏆 QUERO MEUS PACOTES AGORA'}
+          {generating ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Gerando Pix...</> : '🏆 QUERO MEUS PACOTES AGORA'}
         </Button>
       </div>
 
@@ -955,8 +767,8 @@ function Produto5Page() {
         onConfirm={handleFormConfirm}
         headerEyebrow="🇧🇷 Copa do Mundo FIFA 2026"
         title={`Garanta seus ${KIT.packs} pacotes`}
-        description={`Preencha seus dados para receber seus ${KIT.stickers} cromos oficiais Panini com frete grátis.`}
-        submitLabel="QUERO MEUS PACOTES 🏆"
+        description={`Dados para entrega dos seus ${KIT.stickers} cromos Panini com frete grátis.`}
+        submitLabel="CONTINUAR PARA O PAGAMENTO →"
         primaryColor={VERDE}
         accentColor={AMARELO}
       />
@@ -967,8 +779,8 @@ function Produto5Page() {
         onPay={handleCreatePixPayment}
         onApproved={handlePixApproved}
         headerEyebrow="🇧🇷 Copa do Mundo FIFA 2026"
-        title={`Revise seu kit de ${KIT.packs} pacotes`}
-        description={`Confira seus ${KIT.stickers} cromos Panini, escolha o frete e finalize com Pix.`}
+        title={`Kit ${KIT.packs} pacotes`}
+        description={`${KIT.stickers} cromos Panini · frete grátis · envio em 24h`}
         primaryColor={VERDE}
         accentColor={AMARELO}
         payButtonLabel={(total) => `🏆 Pagar R$ ${total} com Pix`}

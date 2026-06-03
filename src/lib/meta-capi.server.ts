@@ -45,8 +45,9 @@ export async function sendMetaCapiPurchase(
     return { ok: false, payload: null, httpStatus: null, responseBody: null, error };
   }
 
+  const domain = process.env.KORVEX_WEBHOOK_BASE_URL?.replace(/\/+$/, '') || 'https://copadasfigurinhas.com';
   const eventSourceUrl =
-    tracking.landing_url || tracking.checkout_url || 'https://eletrojundiai.shop/';
+    tracking.landing_url || tracking.checkout_url || `${domain}/`;
 
   const eventId = opts.eventId || order.external_reference;
 

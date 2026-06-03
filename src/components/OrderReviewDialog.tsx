@@ -5,6 +5,7 @@ import { Loader2, Copy, Check, QrCode, Truck, Shield, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
 import { getKorvexPaymentStatus } from '@/lib/korvex.functions';
+import { useMetaPixel } from '@/hooks/useMetaPixel';
 import type { PixPaymentInfo } from './PixCheckoutDialog';
 import pixLogo from '@/assets/pix-logo.png';
 
@@ -50,7 +51,9 @@ export function OrderReviewDialog({
   const [status, setStatus] = useState<string>('pending');
   const [copied, setCopied] = useState(false);
   const getStatus = useServerFn(getKorvexPaymentStatus);
+  const { trackAddPaymentInfo } = useMetaPixel();
   const firedRef = useRef(false);
+  const addPaymentInfoFiredRef = useRef(false);
   const [shipping, setShipping] = useState<'gratis' | 'expresso'>('gratis');
   const shippingCost = shipping === 'expresso' ? 16.9 : 0;
 
@@ -93,6 +96,18 @@ export function OrderReviewDialog({
       if (p) {
         setPayment(p);
         setStatus(p.status || 'pending');
+        // AddPaymentInfo — dispara quando QR Code aparece (sinal forte de intenção)
+        if (!addPaymentInfoFiredRef.current && product) {
+          addPaymentInfoFiredRef.current = true;
+          trackAddPaymentInfo({
+            content_name: product.title,
+            content_ids: [p.txid || p.id],
+            value: total,
+            currency: 'BRL',
+            num_items: 1,
+            event_id: p.external_reference,
+          });
+        }
       }
     } finally {
       setGenerating(false);
