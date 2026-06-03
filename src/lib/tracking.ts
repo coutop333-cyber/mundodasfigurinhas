@@ -2,7 +2,7 @@
 // para uso posterior em webhook (Conversion API / UTMify).
 
 const KEY = 'cc_tracking_v1';
-const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id'] as const;
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id', 'src', 'sck'] as const;
 
 export interface TrackingData {
   utms: Record<string, string>;
