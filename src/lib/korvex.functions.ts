@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
+import { sendUtmifyOrder } from '@/lib/utmify.server';
 
 const KORVEX_BASE = 'https://app.korvex.com.br/api/v1';
 
@@ -250,6 +251,26 @@ export const createKorvexPixPayment = createServerFn({ method: 'POST' })
       orderId,
       total_ms: Date.now() - totalStartedAt,
     });
+
+    // ===== UTMify: waiting_payment (PIX gerado) =====
+    try {
+      const { data: orderFull } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('external_reference', data.externalReference)
+        .maybeSingle();
+
+      if (orderFull) {
+        const result = await sendUtmifyOrder(orderFull, { status: 'waiting_payment' });
+        console.log('[korvex-create][UTMify-waiting]', {
+          ok: result.ok,
+          httpStatus: result.httpStatus,
+          responseBody: result.responseBody,
+        });
+      }
+    } catch (err) {
+      console.error('[korvex-create][UTMify-waiting] erro', err);
+    }
 
     return {
       id: transactionId,
