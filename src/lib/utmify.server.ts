@@ -65,17 +65,19 @@ export function buildUtmifyPayload(
   const status = options?.status ?? 'paid';
   const approvedDate = status === 'paid' ? utmifyDate(order.approved_at) : null;
 
+  const platform = process.env.UTMIFY_PLATFORM || 'CopaFigurinhas';
+
   return {
     orderId: nonEmpty(order.external_reference, `order-${Date.now()}`),
-    platform: 'CasaCosmeticos',
+    platform,
     paymentMethod: 'pix',
     status,
     createdAt,
     approvedDate,
     refundedAt: null,
     customer: {
-      name: nonEmpty(tracking.name, 'Cliente CasaCosmeticos'),
-      email: nonEmpty(tracking.email, `cliente+${order.external_reference}@eletrojundiai.shop`).toLowerCase(),
+      name: nonEmpty(tracking.name, 'Cliente'),
+      email: nonEmpty(tracking.email, `cliente+${order.external_reference}@copadasfigurinhas.com`).toLowerCase(),
       phone: cleanDigits(tracking.phone) || null,
       document: null,
       country: 'BR',
