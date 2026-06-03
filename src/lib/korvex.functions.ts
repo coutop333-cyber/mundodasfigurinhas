@@ -20,11 +20,13 @@ function getKorvexHeaders(): Record<string, string> {
 }
 
 function getWebhookUrl(): string {
-  const base =
+  const raw =
     process.env.KORVEX_WEBHOOK_BASE_URL?.trim() ||
     process.env.VENOPAG_WEBHOOK_BASE_URL?.trim() ||
-    'https://eletrojundiai.shop';
-  return `${base.replace(/\/+$/, '')}/api/public/korvex-webhook`;
+    'https://copadasfigurinhas.com';
+  // Remove backticks, aspas ou espaços que possam ter sido salvos por engano
+  const base = raw.replace(/[`'"]/g, '').replace(/\/+$/, '');
+  return `${base}/api/public/korvex-webhook`;
 }
 
 // ============ Warm ============
