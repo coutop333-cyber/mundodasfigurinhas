@@ -266,7 +266,7 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
                 nomeCliente: String(customerName || ''),
                 emailCliente: String(customerEmail),
                 codigoPedido: String(order.external_reference || order.id),
-                linkRastreio: `https://eletrojundiai.shop/rastreio/${order.external_reference}`,
+                linkRastreio: `https://copadasfigurinhas.com/rastreio/${order.external_reference}`,
               });
             }
           }
