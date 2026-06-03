@@ -152,12 +152,12 @@ function HomePage() {
 
   useEffect(() => { captureTracking(); }, []);
 
-  // ViewContent no carregamento (dedup com event_id)
+  // ViewContent no carregamento — dispara 1x, com event_id para dedup com CAPI
   const viewContentFired = useRef(false);
   useEffect(() => {
     if (viewContentFired.current) return;
     viewContentFired.current = true;
-    const eventId = newEventId('view');
+    const eventId = newEventId('vc');
     trackViewContent({
       content_name: KIT_20.quantity,
       content_ids: [KIT_20.contentId],
@@ -167,17 +167,6 @@ function HomePage() {
       event_id: eventId,
     });
   }, [trackViewContent]);
-
-  // AddToCart ao trocar kit
-  useEffect(() => {
-    trackAddToCart({
-      content_name: KIT.quantity,
-      content_ids: [KIT.contentId],
-      value: KIT.price,
-      currency: 'BRL',
-      num_items: 1,
-    });
-  }, [KIT.id]);
 
   const createPixPayment = useServerFn(createKorvexPixPayment);
   const warmPixProxy = useServerFn(warmKorvexPix);
@@ -197,6 +186,16 @@ function HomePage() {
   const handleBuyClick = () => {
     if (generating) return;
     void warmPixProxy();
+    // AddToCart — dispara no clique do CTA (sinal real de intenção)
+    trackAddToCart({
+      content_name: KIT.quantity,
+      content_ids: [KIT.contentId],
+      content_type: 'product',
+      value: KIT.price,
+      currency: 'BRL',
+      num_items: 1,
+      event_id: newEventId('atc'),
+    });
     setFormOpen(true);
   };
 

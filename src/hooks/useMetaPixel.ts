@@ -30,7 +30,7 @@ export const useMetaPixel = () => {
     value: d.value,
     currency: d.currency || 'BRL',
     num_items: d.num_items || 1,
-  }), [trackEvent]);
+  }, d.event_id ? { eventID: d.event_id } : undefined), [trackEvent]);
 
   const trackInitiateCheckout = useCallback((d: any) => trackEvent('InitiateCheckout', {
     content_name: d.content_name,
