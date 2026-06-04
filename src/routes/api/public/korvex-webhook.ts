@@ -17,8 +17,12 @@ const cors = {
 };
 
 const PAID_EVENTS = new Set([
-  'transaction_paid', 'paid', 'approved', 'completed',
-  'concluido', 'concluída', 'aprovado', 'pago',
+  // Korvex
+  'ok', 'transaction_paid',
+  // Genéricos
+  'paid', 'approved', 'completed', 'confirmed', 'success',
+  // Português
+  'concluido', 'concluída', 'aprovado', 'pago', 'confirmado',
 ]);
 
 const bodySchema = z
@@ -79,12 +83,18 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
         const url = new URL(request.url);
         const refQs = url.searchParams.get('ref') || undefined;
 
-        // Identificar o evento
+        // Identificar o evento — loga TUDO para diagnóstico
         const rawEvent = String(parsed.data.event || parsed.data.status || '').toLowerCase().trim();
         const rawStatus = String(parsed.data.status || parsed.data.event || '').toLowerCase().trim();
         const isPaid = PAID_EVENTS.has(rawEvent) || PAID_EVENTS.has(rawStatus);
 
-        console.log('[KORVEX_WEBHOOK_EVENTO]', { rawEvent, rawStatus, isPaid });
+        console.log('[KORVEX_WEBHOOK_EVENTO]', {
+          rawEvent,
+          rawStatus,
+          isPaid,
+          fullBody: json,
+          refQs,
+        });
 
         // Identificar o transactionId
         const transactionId =
