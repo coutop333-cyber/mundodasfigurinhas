@@ -245,6 +245,12 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
 
         // ===== Meta CAPI Purchase =====
         try {
+          console.log('[KORVEX_META_CAPI_CHECK]', {
+            meta_capi_sent_at: (orderFull as any).meta_capi_sent_at,
+            has_pixel_id: !!process.env.META_PIXEL_ID,
+            has_token: !!process.env.META_CONVERSIONS_API_TOKEN,
+            pixel_id: process.env.META_PIXEL_ID,
+          });
           if (!(orderFull as any).meta_capi_sent_at) {
             const metaResult = await sendAndLogMetaCapiPurchase(orderFull, {
               eventId: String(orderFull.external_reference),

@@ -84,7 +84,9 @@ export function OrderReviewDialog({
         console.error('poll status', err);
       }
     };
-    const t = setInterval(tick, 3500);
+    // Primeira checagem imediata, depois a cada 2 segundos
+    void tick();
+    const t = setInterval(tick, 2000);
     return () => { cancelled = true; clearInterval(t); };
   }, [payment, status, getStatus, onApproved]);
 
