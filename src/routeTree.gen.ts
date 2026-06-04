@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ObrigadoRouteImport } from './routes/obrigado'
+import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RastreioCodigoRouteImport } from './routes/rastreio.$codigo'
 import { Route as AdminUtmifySondaRouteImport } from './routes/admin/utmify-sonda'
@@ -24,6 +25,11 @@ import { Route as ApiPublicKorvexWebhookRouteImport } from './routes/api/public/
 const ObrigadoRoute = ObrigadoRouteImport.update({
   id: '/obrigado',
   path: '/obrigado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuiaRoute = GuiaRouteImport.update({
+  id: '/guia',
+  path: '/guia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -81,6 +87,7 @@ const ApiPublicKorvexWebhookRoute = ApiPublicKorvexWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/guia': typeof GuiaRoute
   '/obrigado': typeof ObrigadoRoute
   '/admin/email-massa': typeof AdminEmailMassaRoute
   '/admin/rastreamento-retroativo': typeof AdminRastreamentoRetroativoRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/guia': typeof GuiaRoute
   '/obrigado': typeof ObrigadoRoute
   '/admin/email-massa': typeof AdminEmailMassaRoute
   '/admin/rastreamento-retroativo': typeof AdminRastreamentoRetroativoRoute
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/guia': typeof GuiaRoute
   '/obrigado': typeof ObrigadoRoute
   '/admin/email-massa': typeof AdminEmailMassaRoute
   '/admin/rastreamento-retroativo': typeof AdminRastreamentoRetroativoRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/guia'
     | '/obrigado'
     | '/admin/email-massa'
     | '/admin/rastreamento-retroativo'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/guia'
     | '/obrigado'
     | '/admin/email-massa'
     | '/admin/rastreamento-retroativo'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/guia'
     | '/obrigado'
     | '/admin/email-massa'
     | '/admin/rastreamento-retroativo'
@@ -163,6 +175,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GuiaRoute: typeof GuiaRoute
   ObrigadoRoute: typeof ObrigadoRoute
   AdminEmailMassaRoute: typeof AdminEmailMassaRoute
   AdminRastreamentoRetroativoRoute: typeof AdminRastreamentoRetroativoRoute
@@ -182,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/obrigado'
       fullPath: '/obrigado'
       preLoaderRoute: typeof ObrigadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guia': {
+      id: '/guia'
+      path: '/guia'
+      fullPath: '/guia'
+      preLoaderRoute: typeof GuiaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -259,6 +279,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GuiaRoute: GuiaRoute,
   ObrigadoRoute: ObrigadoRoute,
   AdminEmailMassaRoute: AdminEmailMassaRoute,
   AdminRastreamentoRetroativoRoute: AdminRastreamentoRetroativoRoute,
