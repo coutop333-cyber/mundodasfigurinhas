@@ -319,7 +319,7 @@ export const getKorvexPaymentStatus = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { data: order } = await supabaseAdmin
       .from('orders')
-      .select('id, status, amount, external_reference, efi_status, efi_txid, created_at')
+      .select('id, status, amount, external_reference, efi_status, efi_txid, created_at, tracking_payload')
       .eq('efi_txid', data.txid)
       .maybeSingle();
 
@@ -332,11 +332,52 @@ export const getKorvexPaymentStatus = createServerFn({ method: 'POST' })
 
     const isPaid =
       internal === 'approved' || internal === 'paid' || internal === 'pago' ||
-      gw === 'CONFIRMED' || gw === 'PAID' || gw === 'APPROVED';
+      gw === 'CONFIRMED' || gw === 'PAID' || gw === 'APPROVED' || gw === 'OK';
 
     const isFailed =
       internal === 'rejected' || internal === 'cancelled' || internal === 'canceled' ||
       gw === 'EXPIRED' || gw === 'CANCELLED';
+
+    // ===== FALLBACK: consulta Korvex diretamente se ainda pendente =====
+    if (!isPaid && !isFailed) {
+      try {
+        const korvexStatus = await consultKorvexTransaction(data.txid);
+        console.log('[korvex-status][fallback]', { txid: data.txid, status: korvexStatus.status });
+
+        if (korvexStatus.status === 'confirmed') {
+          // Atualiza o banco e dispara o webhook interno para processar UTMify + Meta
+          await supabaseAdmin
+            .from('orders')
+            .update({ status: 'paid', efi_status: 'CONFIRMED', approved_at: new Date().toISOString() } as any)
+            .eq('id', order.id);
+
+          // Dispara o webhook interno para processar integrações
+          try {
+            const base = process.env.KORVEX_WEBHOOK_BASE_URL?.replace(/[`'"]/g, '').replace(/\/+$/, '') || 'https://copadasfigurinhas.com';
+            await fetch(`${base}/api/public/korvex-webhook?ref=${order.external_reference}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ event: 'TRANSACTION_PAID', status: 'ok', transactionId: data.txid }),
+            });
+          } catch (e) {
+            console.error('[korvex-status][fallback] erro ao acionar webhook interno', e);
+          }
+
+          return {
+            status: 'approved',
+            external_reference: order.external_reference || undefined,
+            transaction_amount: Number(order.amount || 0),
+          };
+        }
+
+        if (korvexStatus.status === 'expired') {
+          await supabaseAdmin.from('orders').update({ efi_status: 'EXPIRED' } as any).eq('id', order.id);
+          return { status: 'rejected', external_reference: order.external_reference || undefined, transaction_amount: 0 };
+        }
+      } catch (err) {
+        console.error('[korvex-status][fallback] erro ao consultar Korvex', err);
+      }
+    }
 
     return {
       status: isPaid ? 'approved' : isFailed ? 'rejected' : 'pending',
@@ -344,3 +385,36 @@ export const getKorvexPaymentStatus = createServerFn({ method: 'POST' })
       transaction_amount: Number(order.amount || 0),
     };
   });
+
+// ============ Consulta direta na Korvex ============
+export async function consultKorvexTransaction(transactionId: string): Promise<{
+  status: 'pending' | 'confirmed' | 'expired' | 'unknown';
+  raw: any;
+}> {
+  const pub = process.env.KORVEX_PUBLIC_KEY?.trim();
+  const sec = process.env.KORVEX_SECRET_KEY?.trim();
+  if (!pub || !sec) return { status: 'unknown', raw: null };
+
+  try {
+    const res = await fetch(`${KORVEX_BASE}/transactions/${transactionId}`, {
+      method: 'GET',
+      headers: { 'x-public-key': pub, 'x-secret-key': sec, 'Content-Type': 'application/json' },
+    });
+    const text = await res.text();
+    let json: any = null;
+    try { json = JSON.parse(text); } catch { json = { raw: text }; }
+
+    console.log('[korvex-consult]', { transactionId, httpStatus: res.status, body: json });
+
+    const statusRaw = String(json?.status || json?.transaction?.status || '').toLowerCase();
+    const CONFIRMED = new Set(['ok', 'paid', 'approved', 'confirmed', 'completed', 'pago', 'concluido']);
+    const EXPIRED = new Set(['expired', 'cancelled', 'canceled', 'failed', 'rejected']);
+
+    if (CONFIRMED.has(statusRaw)) return { status: 'confirmed', raw: json };
+    if (EXPIRED.has(statusRaw)) return { status: 'expired', raw: json };
+    return { status: 'pending', raw: json };
+  } catch (err) {
+    console.error('[korvex-consult] erro', err);
+    return { status: 'unknown', raw: null };
+  }
+}
