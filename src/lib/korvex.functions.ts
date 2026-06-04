@@ -396,7 +396,7 @@ export async function consultKorvexTransaction(transactionId: string): Promise<{
   if (!pub || !sec) return { status: 'unknown', raw: null };
 
   try {
-    const res = await fetch(`${KORVEX_BASE}/transactions/${transactionId}`, {
+    const res = await fetch(`${KORVEX_BASE}/gateway/transactions?id=${encodeURIComponent(transactionId)}`, {
       method: 'GET',
       headers: { 'x-public-key': pub, 'x-secret-key': sec, 'Content-Type': 'application/json' },
     });
@@ -406,9 +406,18 @@ export async function consultKorvexTransaction(transactionId: string): Promise<{
 
     console.log('[korvex-consult]', { transactionId, httpStatus: res.status, body: json });
 
-    const statusRaw = String(json?.status || json?.transaction?.status || '').toLowerCase();
-    const CONFIRMED = new Set(['ok', 'paid', 'approved', 'confirmed', 'completed', 'pago', 'concluido']);
-    const EXPIRED = new Set(['expired', 'cancelled', 'canceled', 'failed', 'rejected']);
+    // Extrai status de qualquer campo possível na resposta
+    const statusRaw = String(
+      json?.status ||
+      json?.transaction?.status ||
+      json?.data?.status ||
+      json?.payment?.status ||
+      json?.pix?.status ||
+      ''
+    ).toLowerCase();
+
+    const CONFIRMED = new Set(['ok', 'paid', 'approved', 'confirmed', 'completed', 'pago', 'concluido', 'success']);
+    const EXPIRED = new Set(['expired', 'cancelled', 'canceled', 'failed', 'rejected', 'pending_expired']);
 
     if (CONFIRMED.has(statusRaw)) return { status: 'confirmed', raw: json };
     if (EXPIRED.has(statusRaw)) return { status: 'expired', raw: json };
