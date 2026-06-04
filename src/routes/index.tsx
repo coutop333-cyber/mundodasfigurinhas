@@ -233,9 +233,9 @@ function HomePage() {
       const fd = formDataRef.current || {};
       const payment = await createPixPayment({
         data: {
-          kitId: KIT.id,
-          title: KIT.quantity,
-          unitPrice: KIT.price,
+          kitId: selectedKitId === -99 ? 99 : KIT.id,
+          title: selectedKitId === -99 ? '1 FIGURINHA TESTE COPA 2026' : KIT.quantity,
+          unitPrice: selectedKitId === -99 ? 5.00 : KIT.price,
           externalReference: eventId,
           payerEmail: fd.email,
           payerName: fd.nome,
@@ -696,6 +696,42 @@ function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* COMPRA TESTE */}
+      <div className="max-w-5xl mx-auto px-4 mb-6">
+        <details className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+          <summary className="px-4 py-3 text-xs text-gray-400 cursor-pointer select-none list-none flex items-center justify-between hover:text-gray-600 transition-colors">
+            <span>Compra teste</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </summary>
+          <div className="px-4 pb-4 pt-2 border-t border-gray-200 bg-white">
+            <p className="text-xs text-gray-500 mb-3">Ambiente de teste — gera um Pix real de R$ 5,00 para validar a integração.</p>
+            <Button
+              disabled={generating}
+              onClick={() => {
+                if (generating) return;
+                void warmPixProxy();
+                formDataRef.current = formDataRef.current || {};
+                setReviewProduct({
+                  image: promoHero,
+                  title: '1 FIGURINHA TESTE - Copa das Figurinhas',
+                  variation: '1 figurinha · teste',
+                  quantity: 1,
+                  unitPrice: 5.00,
+                  price: 5.00,
+                });
+                setFormOpen(true);
+                // Override do kit para teste
+                setSelectedKitId(-99 as any);
+              }}
+              variant="outline"
+              className="text-xs h-8 px-4 border-gray-300 text-gray-600"
+            >
+              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Gerar Pix de R$ 5,00'}
+            </Button>
+          </div>
+        </details>
+      </div>
 
       {/* FOOTER */}
       <footer className="bg-gray-900 text-white py-10 pb-32 lg:pb-10">
