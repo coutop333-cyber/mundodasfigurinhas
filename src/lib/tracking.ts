@@ -11,6 +11,7 @@ export interface TrackingData {
   fbclid?: string;
   referrer?: string;
   landing_url?: string;
+  first_touch_url?: string; // URL completa do primeiro clique (preserva UTMs do anúncio)
   user_agent?: string;
   first_seen_at?: string;
 }
@@ -58,13 +59,19 @@ export function captureTracking(): TrackingData {
   // fbp - vem do pixel, lemos do cookie
   const fbp = getCookie('_fbp') || stored.fbp;
 
+  // Preserva a URL do primeiro clique com UTMs (importante para atribuição de campanha)
+  const currentUrl = window.location.href;
+  const hasUtmsInUrl = [...UTM_KEYS].some((k) => params.get(k));
+  const firstTouchUrl = stored.first_touch_url || (hasUtmsInUrl ? currentUrl : undefined);
+
   const data: TrackingData = {
     utms: newUtms,
     fbp,
     fbc,
     fbclid: fbclid || undefined,
     referrer: stored.referrer || (document.referrer || undefined),
-    landing_url: stored.landing_url || window.location.href,
+    landing_url: stored.landing_url || currentUrl,
+    first_touch_url: firstTouchUrl,
     user_agent: stored.user_agent || navigator.userAgent,
     first_seen_at: stored.first_seen_at || new Date().toISOString(),
   };
