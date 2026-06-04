@@ -262,7 +262,9 @@ function GuiaPage() {
       {/* HEADER */}
       <header className="bg-white border-b sticky top-[44px] z-50" style={{ borderBottomColor: AMARELO, borderBottomWidth: 3 }}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <img src={logoPanini} alt="Copa das Figurinhas" className="h-10 w-auto" />
+          <span className="text-lg font-black" style={{ fontFamily: 'Archivo Black, sans-serif', color: AZUL }}>
+            🏆 <span style={{ color: VERDE }}>COPA</span> DAS FIGURINHAS
+          </span>
           <div className="flex items-center gap-3">
             <span className="hidden md:flex items-center gap-1 text-xs font-semibold text-green-700">
               <Shield className="w-3.5 h-3.5" /> Compra segura
