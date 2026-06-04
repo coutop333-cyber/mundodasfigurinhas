@@ -144,7 +144,9 @@ export const createKorvexPixPayment = createServerFn({ method: 'POST' })
       throw new Error('Não foi possível registrar o pedido. Tente novamente.');
     }
 
-    const webhookUrl = `${getWebhookUrl()}?ref=${encodeURIComponent(pedidoId)}`;
+    // URL FIXA — sem ?ref= para não criar um novo webhook por pedido (limite de 20)
+    // O pedido é identificado pelo campo identifier + transactionId no webhook
+    const webhookUrl = getWebhookUrl();
 
     // Formata campos para a Korvex
     const rawPhone = data.payerPhone || tracking.phone || '';
