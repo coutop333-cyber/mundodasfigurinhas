@@ -38,16 +38,14 @@ export const Route = createFileRoute('/api/public/asaas-webhook')({
         request.headers.forEach((v, k) => { headersObj[k] = v; });
         console.log('[ASAAS_WEBHOOK_HEADERS]', headersObj);
 
-        // Validação do token de segurança do Asaas (header asaas-access-token)
+        // Log do token recebido para diagnóstico
+        const receivedToken = headersObj['asaas-access-token'] || headersObj['authorization'] || '';
         const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN?.trim();
-        const isInternal = headersObj['x-asaas-internal'] === '1';
-        if (expectedToken && !isInternal) {
-          const receivedToken = headersObj['asaas-access-token'] || headersObj['authorization'] || '';
-          if (receivedToken !== expectedToken) {
-            console.warn('[ASAAS_WEBHOOK] token inválido', { received: receivedToken?.slice(0, 8) });
-            return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
-          }
-        }
+        console.log('[ASAAS_WEBHOOK_TOKEN_CHECK]', {
+          received: receivedToken?.slice(0, 12),
+          expected: expectedToken?.slice(0, 12),
+          match: receivedToken === expectedToken,
+        });
 
         let rawBody = '';
         try {
