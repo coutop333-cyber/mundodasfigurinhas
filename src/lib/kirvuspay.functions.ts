@@ -23,7 +23,7 @@ function getWebhookUrl(): string {
   // URL FIXA da Edge Function — sem ?ref= para não criar webhook por pedido (limite de 20)
   // O pedido é identificado pelo transactionId no payload do webhook
   const supabaseUrl = process.env.SUPABASE_URL?.trim() || 'https://lrkmfhqetfwtdrfuginx.supabase.co';
-  return `${supabaseUrl}/functions/v1/asaas-webhook`;
+  return `${supabaseUrl}/functions/v1/pix-webhook`;
 }
 
 // ============ Warm ============
