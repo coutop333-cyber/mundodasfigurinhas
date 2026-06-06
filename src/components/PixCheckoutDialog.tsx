@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Copy, Check, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
-import { getAsaasPaymentStatus } from '@/lib/asaas.functions';
+import { getKirvusPaymentStatus } from '@/lib/kirvuspay.functions';
 
 export interface PixPaymentInfo {
   id: string | number;
@@ -28,7 +28,7 @@ interface Props {
 export function PixCheckoutDialog({ open, onOpenChange, payment, onApproved }: Props) {
   const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState<string>(payment?.status ?? 'pending');
-  const getStatus = useServerFn(getAsaasPaymentStatus);
+  const getStatus = useServerFn(getKirvusPaymentStatus);
   const firedRef = useRef(false);
 
   useEffect(() => {
