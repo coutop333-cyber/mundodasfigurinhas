@@ -3,6 +3,8 @@ import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import { sendUtmifyOrder } from '@/lib/utmify.server';
+import { sendAndLogMetaCapiPurchase } from '@/lib/meta-capi.server';
+import { sendOrderApprovedEmail } from '@/lib/email/sendOrderApprovedEmail.server';
 
 const ASAAS_BASE = 'https://api.asaas.com/v3';
 
@@ -379,20 +381,75 @@ export const getAsaasPaymentStatus = createServerFn({ method: 'POST' })
             .update({ status: 'paid', asaas_status: 'CONFIRMED', approved_at: new Date().toISOString() } as any)
             .eq('id', order.id);
 
-          // Acionar webhook interno para processar UTMify + Meta CAPI + email
+          // Processar integrações diretamente (sem webhook interno — evita corte do Vercel)
           try {
-            const base = (process.env.ASAAS_WEBHOOK_BASE_URL || 'https://copadasfigurinhas.com')
-              .replace(/[`'"]/g, '').replace(/\/+$/, '');
-            await fetch(`${base}/api/public/asaas-webhook`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-asaas-internal': '1' },
-              body: JSON.stringify({
-                event: 'PAYMENT_RECEIVED',
-                payment: { id: data.txid, externalReference: order.external_reference, status: 'RECEIVED' },
-              }),
-            });
+            const { data: fullOrder } = await supabaseAdmin
+              .from('orders').select('*').eq('id', order.id).maybeSingle();
+            const orderFull = fullOrder || order;
+
+            // Rastreio
+            try {
+              const codigo = String(order.external_reference || '').trim();
+              if (codigo) {
+                await supabaseAdmin.from('rastreios' as any).upsert(
+                  { codigo_pedido: codigo, status: 'Pagamento aprovado', observacao: '' } as any,
+                  { onConflict: 'codigo_pedido', ignoreDuplicates: true },
+                );
+              }
+            } catch (e) { console.error('[asaas-status][rastreio]', e); }
+
+            // UTMify
+            try {
+              const { data: claimed } = await supabaseAdmin
+                .rpc('claim_order_utmify' as any, { _order_id: order.id } as any).maybeSingle();
+              if (claimed) {
+                try { await sendUtmifyOrder(orderFull, { status: 'waiting_payment' }); } catch {}
+                const result = await sendUtmifyOrder(orderFull, { status: 'paid' });
+                console.log('[asaas-status][UTMify]', { ok: result.ok, httpStatus: result.httpStatus });
+                await supabaseAdmin.from('orders').update({
+                  utmify_payload: result.payload as any,
+                  utmify_http_status: result.httpStatus,
+                  utmify_response: result.responseBody,
+                  utmify_error: result.error,
+                  utmify_sent_at: result.ok ? new Date().toISOString() : null,
+                  utmify_processing_at: null,
+                } as any).eq('id', order.id);
+              }
+            } catch (e) { console.error('[asaas-status][UTMify]', e); }
+
+            // Meta CAPI
+            try {
+              if (!(orderFull as any).meta_capi_sent_at) {
+                const metaResult = await sendAndLogMetaCapiPurchase(orderFull, {
+                  eventId: String(orderFull.external_reference),
+                  logTag: '[ASAAS_STATUS_META_CAPI]',
+                });
+                console.log('[asaas-status][Meta CAPI]', metaResult);
+              }
+            } catch (e) { console.error('[asaas-status][Meta CAPI]', e); }
+
+            // Email
+            try {
+              const tp = (orderFull as any).tracking_payload || {};
+              const customerEmail: string | undefined = tp.email;
+              const customerName: string = tp.name || tp.nome || '';
+              if (!(orderFull as any).order_email_sent_at && customerEmail) {
+                const { data: emailClaimed, error: claimErr } = await supabaseAdmin
+                  .from('orders')
+                  .update({ order_email_sent_at: new Date().toISOString() } as any)
+                  .eq('id', order.id).is('order_email_sent_at', null).select('id').maybeSingle();
+                if (!claimErr && emailClaimed) {
+                  await sendOrderApprovedEmail({
+                    nomeCliente: customerName,
+                    emailCliente: customerEmail,
+                    codigoPedido: String(order.external_reference || order.id),
+                    linkRastreio: `https://copadasfigurinhas.com/rastreio/${order.external_reference}`,
+                  });
+                }
+              }
+            } catch (e) { console.error('[asaas-status][email]', e); }
           } catch (e) {
-            console.error('[asaas-status][fallback] erro ao acionar webhook interno', e);
+            console.error('[asaas-status][integrações]', e);
           }
 
           return {
@@ -408,6 +465,38 @@ export const getAsaasPaymentStatus = createServerFn({ method: 'POST' })
         }
       } catch (err) {
         console.error('[asaas-status][fallback] erro ao consultar Asaas', err);
+      }
+    }
+
+    // Se já está pago mas UTMify ainda não foi enviado, dispara agora
+    if (isPaid) {
+      try {
+        const { data: claimed } = await supabaseAdmin
+          .rpc('claim_order_utmify' as any, { _order_id: order.id } as any).maybeSingle();
+        if (claimed) {
+          const { data: fullOrder } = await supabaseAdmin.from('orders').select('*').eq('id', order.id).maybeSingle();
+          const orderFull = fullOrder || order;
+          try { await sendUtmifyOrder(orderFull, { status: 'waiting_payment' }); } catch {}
+          const result = await sendUtmifyOrder(orderFull, { status: 'paid' });
+          console.log('[asaas-status][UTMify-paid-fallback]', { ok: result.ok });
+          await supabaseAdmin.from('orders').update({
+            utmify_payload: result.payload as any,
+            utmify_http_status: result.httpStatus,
+            utmify_response: result.responseBody,
+            utmify_error: result.error,
+            utmify_sent_at: result.ok ? new Date().toISOString() : null,
+            utmify_processing_at: null,
+          } as any).eq('id', order.id);
+
+          if (!(orderFull as any).meta_capi_sent_at) {
+            await sendAndLogMetaCapiPurchase(orderFull, {
+              eventId: String(orderFull.external_reference),
+              logTag: '[ASAAS_STATUS_META_CAPI_FALLBACK]',
+            }).catch((e) => console.error('[asaas-status][Meta CAPI fallback]', e));
+          }
+        }
+      } catch (e) {
+        console.error('[asaas-status][UTMify-paid-fallback]', e);
       }
     }
 
