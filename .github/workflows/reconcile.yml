@@ -1,0 +1,18 @@
+name: Reconcile Asaas Payments
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reconcile pending payments
+        run: |
+          response=$(curl -s -o /tmp/resp.json -w "%{http_code}" \
+            "https://lrkmfhqetfwtdrfuginx.supabase.co/functions/v1/reconcile-payments" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}")
+          cat /tmp/resp.json
+          echo "HTTP: $response"
