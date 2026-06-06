@@ -57,7 +57,7 @@ export const sendUtmifyRealPurchaseProbe = createServerFn({ method: 'POST' })
       approved_at: now,
       client_ip: '127.0.0.1',
       tracking_payload: {
-        _venopag_source: 'produto4',
+        _source: 'produto4',
         name: 'Sonda UTMify',
         email: `sonda+${marker.toLowerCase()}@eletrojundiai.shop`,
         phone: '11999999999',

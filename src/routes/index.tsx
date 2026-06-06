@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useMetaPixel } from '@/hooks/useMetaPixel';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
-import { createKorvexPixPayment, warmKorvexPix } from '@/lib/korvex.functions';
+import { createAsaasPixPayment, warmAsaasPix } from '@/lib/asaas.functions';
 import { captureTracking, newEventId } from '@/lib/tracking';
 import { CheckoutForm } from '@/components/CheckoutForm';
 import type { PixPaymentInfo } from '@/components/PixCheckoutDialog';
@@ -168,11 +168,11 @@ function HomePage() {
     });
   }, [trackViewContent]);
 
-  const createPixPayment = useServerFn(createKorvexPixPayment);
-  const warmPixProxy = useServerFn(warmKorvexPix);
+  const createPixPayment = useServerFn(createAsaasPixPayment);
+  const warmPixProxy = useServerFn(warmAsaasPix);
 
   useEffect(() => {
-    const key = 'korvex_warmed_at';
+    const key = 'asaas_warmed_at';
     const last = Number(window.sessionStorage.getItem(key) || 0);
     if (Date.now() - last < 10 * 60 * 1000) return;
     window.sessionStorage.setItem(key, String(Date.now()));

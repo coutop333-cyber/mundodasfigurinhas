@@ -17,10 +17,8 @@ import { Route as AdminUtmifySondaRouteImport } from './routes/admin/utmify-sond
 import { Route as AdminRastreiosRouteImport } from './routes/admin/rastreios'
 import { Route as AdminRastreamentoRetroativoRouteImport } from './routes/admin/rastreamento-retroativo'
 import { Route as AdminEmailMassaRouteImport } from './routes/admin/email-massa'
-import { Route as ApiPublicVenopagWebhookTestRouteImport } from './routes/api/public/venopag-webhook-test'
-import { Route as ApiPublicVenopagWebhookRouteImport } from './routes/api/public/venopag-webhook'
 import { Route as ApiPublicPedidoStatusRouteImport } from './routes/api/public/pedido-status'
-import { Route as ApiPublicKorvexWebhookRouteImport } from './routes/api/public/korvex-webhook'
+import { Route as ApiPublicAsaasWebhookRouteImport } from './routes/api/public/asaas-webhook'
 
 const ObrigadoRoute = ObrigadoRouteImport.update({
   id: '/obrigado',
@@ -63,25 +61,14 @@ const AdminEmailMassaRoute = AdminEmailMassaRouteImport.update({
   path: '/admin/email-massa',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicVenopagWebhookTestRoute =
-  ApiPublicVenopagWebhookTestRouteImport.update({
-    id: '/api/public/venopag-webhook-test',
-    path: '/api/public/venopag-webhook-test',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicVenopagWebhookRoute = ApiPublicVenopagWebhookRouteImport.update({
-  id: '/api/public/venopag-webhook',
-  path: '/api/public/venopag-webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicPedidoStatusRoute = ApiPublicPedidoStatusRouteImport.update({
   id: '/api/public/pedido-status',
   path: '/api/public/pedido-status',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicKorvexWebhookRoute = ApiPublicKorvexWebhookRouteImport.update({
-  id: '/api/public/korvex-webhook',
-  path: '/api/public/korvex-webhook',
+const ApiPublicAsaasWebhookRoute = ApiPublicAsaasWebhookRouteImport.update({
+  id: '/api/public/asaas-webhook',
+  path: '/api/public/asaas-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -94,10 +81,8 @@ export interface FileRoutesByFullPath {
   '/admin/rastreios': typeof AdminRastreiosRoute
   '/admin/utmify-sonda': typeof AdminUtmifySondaRoute
   '/rastreio/$codigo': typeof RastreioCodigoRoute
-  '/api/public/korvex-webhook': typeof ApiPublicKorvexWebhookRoute
+  '/api/public/asaas-webhook': typeof ApiPublicAsaasWebhookRoute
   '/api/public/pedido-status': typeof ApiPublicPedidoStatusRoute
-  '/api/public/venopag-webhook': typeof ApiPublicVenopagWebhookRoute
-  '/api/public/venopag-webhook-test': typeof ApiPublicVenopagWebhookTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -108,10 +93,8 @@ export interface FileRoutesByTo {
   '/admin/rastreios': typeof AdminRastreiosRoute
   '/admin/utmify-sonda': typeof AdminUtmifySondaRoute
   '/rastreio/$codigo': typeof RastreioCodigoRoute
-  '/api/public/korvex-webhook': typeof ApiPublicKorvexWebhookRoute
+  '/api/public/asaas-webhook': typeof ApiPublicAsaasWebhookRoute
   '/api/public/pedido-status': typeof ApiPublicPedidoStatusRoute
-  '/api/public/venopag-webhook': typeof ApiPublicVenopagWebhookRoute
-  '/api/public/venopag-webhook-test': typeof ApiPublicVenopagWebhookTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,10 +106,8 @@ export interface FileRoutesById {
   '/admin/rastreios': typeof AdminRastreiosRoute
   '/admin/utmify-sonda': typeof AdminUtmifySondaRoute
   '/rastreio/$codigo': typeof RastreioCodigoRoute
-  '/api/public/korvex-webhook': typeof ApiPublicKorvexWebhookRoute
+  '/api/public/asaas-webhook': typeof ApiPublicAsaasWebhookRoute
   '/api/public/pedido-status': typeof ApiPublicPedidoStatusRoute
-  '/api/public/venopag-webhook': typeof ApiPublicVenopagWebhookRoute
-  '/api/public/venopag-webhook-test': typeof ApiPublicVenopagWebhookTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,10 +120,8 @@ export interface FileRouteTypes {
     | '/admin/rastreios'
     | '/admin/utmify-sonda'
     | '/rastreio/$codigo'
-    | '/api/public/korvex-webhook'
+    | '/api/public/asaas-webhook'
     | '/api/public/pedido-status'
-    | '/api/public/venopag-webhook'
-    | '/api/public/venopag-webhook-test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -153,10 +132,8 @@ export interface FileRouteTypes {
     | '/admin/rastreios'
     | '/admin/utmify-sonda'
     | '/rastreio/$codigo'
-    | '/api/public/korvex-webhook'
+    | '/api/public/asaas-webhook'
     | '/api/public/pedido-status'
-    | '/api/public/venopag-webhook'
-    | '/api/public/venopag-webhook-test'
   id:
     | '__root__'
     | '/'
@@ -167,10 +144,8 @@ export interface FileRouteTypes {
     | '/admin/rastreios'
     | '/admin/utmify-sonda'
     | '/rastreio/$codigo'
-    | '/api/public/korvex-webhook'
+    | '/api/public/asaas-webhook'
     | '/api/public/pedido-status'
-    | '/api/public/venopag-webhook'
-    | '/api/public/venopag-webhook-test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -182,10 +157,8 @@ export interface RootRouteChildren {
   AdminRastreiosRoute: typeof AdminRastreiosRoute
   AdminUtmifySondaRoute: typeof AdminUtmifySondaRoute
   RastreioCodigoRoute: typeof RastreioCodigoRoute
-  ApiPublicKorvexWebhookRoute: typeof ApiPublicKorvexWebhookRoute
+  ApiPublicAsaasWebhookRoute: typeof ApiPublicAsaasWebhookRoute
   ApiPublicPedidoStatusRoute: typeof ApiPublicPedidoStatusRoute
-  ApiPublicVenopagWebhookRoute: typeof ApiPublicVenopagWebhookRoute
-  ApiPublicVenopagWebhookTestRoute: typeof ApiPublicVenopagWebhookTestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -246,20 +219,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEmailMassaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/venopag-webhook-test': {
-      id: '/api/public/venopag-webhook-test'
-      path: '/api/public/venopag-webhook-test'
-      fullPath: '/api/public/venopag-webhook-test'
-      preLoaderRoute: typeof ApiPublicVenopagWebhookTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/venopag-webhook': {
-      id: '/api/public/venopag-webhook'
-      path: '/api/public/venopag-webhook'
-      fullPath: '/api/public/venopag-webhook'
-      preLoaderRoute: typeof ApiPublicVenopagWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/pedido-status': {
       id: '/api/public/pedido-status'
       path: '/api/public/pedido-status'
@@ -267,11 +226,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPedidoStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/korvex-webhook': {
-      id: '/api/public/korvex-webhook'
-      path: '/api/public/korvex-webhook'
-      fullPath: '/api/public/korvex-webhook'
-      preLoaderRoute: typeof ApiPublicKorvexWebhookRouteImport
+    '/api/public/asaas-webhook': {
+      id: '/api/public/asaas-webhook'
+      path: '/api/public/asaas-webhook'
+      fullPath: '/api/public/asaas-webhook'
+      preLoaderRoute: typeof ApiPublicAsaasWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -286,10 +245,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRastreiosRoute: AdminRastreiosRoute,
   AdminUtmifySondaRoute: AdminUtmifySondaRoute,
   RastreioCodigoRoute: RastreioCodigoRoute,
-  ApiPublicKorvexWebhookRoute: ApiPublicKorvexWebhookRoute,
+  ApiPublicAsaasWebhookRoute: ApiPublicAsaasWebhookRoute,
   ApiPublicPedidoStatusRoute: ApiPublicPedidoStatusRoute,
-  ApiPublicVenopagWebhookRoute: ApiPublicVenopagWebhookRoute,
-  ApiPublicVenopagWebhookTestRoute: ApiPublicVenopagWebhookTestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

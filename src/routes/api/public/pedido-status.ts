@@ -2,8 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 
 // GET /api/public/pedido-status?txid=...
-// Endpoint público (somente leitura) para consulta de status do Pix por txid.
-// Usado pelo polling do checkout e disponível para debug/integração externa.
+// Endpoint público (somente leitura) para consulta de status do Pix por txid (asaas_payment_id).
 export const Route = createFileRoute('/api/public/pedido-status')({
   server: {
     handlers: {
@@ -17,7 +16,7 @@ export const Route = createFileRoute('/api/public/pedido-status')({
           'Cache-Control': 'no-store',
         };
 
-        if (!txid || txid.length < 8 || txid.length > 64) {
+        if (!txid || txid.length < 8 || txid.length > 120) {
           return new Response(
             JSON.stringify({ error: 'txid inválido' }),
             { status: 400, headers: cors },
@@ -26,8 +25,8 @@ export const Route = createFileRoute('/api/public/pedido-status')({
 
         const { data: order, error } = await supabaseAdmin
           .from('orders')
-          .select('id, status, amount, external_reference, efi_status, efi_txid, approved_at')
-          .eq('efi_txid', txid)
+          .select('id, status, amount, external_reference, asaas_status, asaas_payment_id, approved_at')
+          .eq('asaas_payment_id', txid)
           .maybeSingle();
 
         if (error) {
@@ -46,28 +45,29 @@ export const Route = createFileRoute('/api/public/pedido-status')({
         }
 
         const internal = String(order.status || '').toLowerCase();
-        const efi = String((order as any).efi_status || '').toUpperCase();
+        const gw = String((order as any).asaas_status || '').toUpperCase();
         const isPaid =
           internal === 'approved' ||
           internal === 'paid' ||
           internal === 'pago' ||
-          efi === 'CONCLUIDA' ||
-          efi === 'PAID' ||
-          efi === 'APPROVED';
+          gw === 'RECEIVED' ||
+          gw === 'CONFIRMED' ||
+          gw === 'PAID' ||
+          gw === 'APPROVED';
         const isFailed =
           internal === 'rejected' ||
           internal === 'cancelled' ||
           internal === 'canceled' ||
-          efi === 'REMOVIDA_PELO_USUARIO_RECEBEDOR' ||
-          efi === 'REMOVIDA_PELO_PSP';
+          gw === 'OVERDUE' ||
+          gw === 'CANCELLED';
 
         return new Response(
           JSON.stringify({
             status: isPaid ? 'approved' : isFailed ? 'rejected' : 'pending',
-            txid: (order as any).efi_txid,
+            txid: (order as any).asaas_payment_id,
             external_reference: order.external_reference,
             amount: Number(order.amount || 0),
-            efi_status: (order as any).efi_status || null,
+            asaas_status: (order as any).asaas_status || null,
             approved_at: (order as any).approved_at || null,
           }),
           { status: 200, headers: cors },

@@ -1,171 +1,124 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { z } from 'zod';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import { sendUtmifyOrder } from '@/lib/utmify.server';
 import { sendOrderApprovedEmail } from '@/lib/email/sendOrderApprovedEmail.server';
 import { sendAndLogMetaCapiPurchase } from '@/lib/meta-capi.server';
 
-// POST /api/public/korvex-webhook
-// Webhook chamado pela Korvex quando o status da cobrança muda.
+// POST /api/public/asaas-webhook
+// Webhook chamado pelo Asaas quando o status de uma cobrança muda.
 
 const cors = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-public-key',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, access_token',
   'Cache-Control': 'no-store',
 };
 
+// Eventos do Asaas que indicam pagamento confirmado
 const PAID_EVENTS = new Set([
-  // Korvex
-  'ok', 'transaction_paid',
-  // Genéricos
-  'paid', 'approved', 'completed', 'confirmed', 'success',
-  // Português
-  'concluido', 'concluída', 'aprovado', 'pago', 'confirmado',
+  'PAYMENT_RECEIVED',
+  'PAYMENT_CONFIRMED',
+  'PAYMENT_OVERDUE_RECEIVED',
 ]);
 
-const bodySchema = z
-  .object({
-    event: z.string().optional(),
-    status: z.string().optional(),
-    transactionId: z.string().trim().min(4).max(200).optional(),
-    transaction_id: z.string().trim().min(4).max(200).optional(),
-    id: z.string().trim().min(4).max(200).optional(),
-    amount: z.union([z.string(), z.number()]).optional(),
-    metadata: z.object({
-      externalReference: z.string().optional(),
-      callbackUrl: z.string().optional(),
-    }).optional(),
-  })
-  .passthrough();
-
-export const Route = createFileRoute('/api/public/korvex-webhook')({
+export const Route = createFileRoute('/api/public/asaas-webhook')({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: cors }),
 
       GET: async () =>
         new Response(
-          JSON.stringify({ ok: true, route: 'korvex-webhook', method: 'POST' }),
+          JSON.stringify({ ok: true, route: 'asaas-webhook', method: 'POST' }),
           { status: 200, headers: cors },
         ),
 
       POST: async ({ request }) => {
         const headersObj: Record<string, string> = {};
         request.headers.forEach((v, k) => { headersObj[k] = v; });
-        console.log('[KORVEX_WEBHOOK_HEADERS]', headersObj);
+        console.log('[ASAAS_WEBHOOK_HEADERS]', headersObj);
+
+        // Validação do token de segurança do Asaas (header asaas-access-token)
+        const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN?.trim();
+        const isInternal = headersObj['x-asaas-internal'] === '1';
+        if (expectedToken && !isInternal) {
+          const receivedToken = headersObj['asaas-access-token'] || headersObj['authorization'] || '';
+          if (receivedToken !== expectedToken) {
+            console.warn('[ASAAS_WEBHOOK] token inválido', { received: receivedToken?.slice(0, 8) });
+            return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors });
+          }
+        }
 
         let rawBody = '';
         try {
           rawBody = await request.text();
         } catch (err) {
-          console.error('[KORVEX_WEBHOOK] erro ao ler body', err);
+          console.error('[ASAAS_WEBHOOK] erro ao ler body', err);
           return new Response(JSON.stringify({ error: 'cannot read body' }), { status: 400, headers: cors });
         }
-        console.log('[KORVEX_WEBHOOK_BODY_RAW]', rawBody);
+        console.log('[ASAAS_WEBHOOK_BODY_RAW]', rawBody);
 
-        let json: unknown;
+        let json: any;
         try {
           json = JSON.parse(rawBody);
         } catch {
-          console.error('[KORVEX_WEBHOOK] json inválido', rawBody);
+          console.error('[ASAAS_WEBHOOK] json inválido', rawBody);
           return new Response(JSON.stringify({ error: 'invalid json' }), { status: 400, headers: cors });
         }
-        console.log('[KORVEX_WEBHOOK_BODY_JSON]', json);
+        console.log('[ASAAS_WEBHOOK_BODY_JSON]', json);
 
-        const parsed = bodySchema.safeParse(json);
-        if (!parsed.success) {
-          console.warn('[korvex-webhook] payload inválido', parsed.error.flatten());
-          return new Response(JSON.stringify({ error: 'invalid payload' }), { status: 400, headers: cors });
-        }
+        const event = String(json?.event || '').toUpperCase().trim();
+        const payment = json?.payment || {};
+        const paymentId: string = payment?.id || '';
+        const externalRef: string = payment?.externalReference || '';
+        const paymentStatus: string = String(payment?.status || '').toUpperCase();
 
-        const url = new URL(request.url);
-        const refQs = url.searchParams.get('ref') || undefined;
+        console.log('[ASAAS_WEBHOOK_EVENTO]', { event, paymentId, externalRef, paymentStatus });
 
-        // Identificar o evento — loga TUDO para diagnóstico
-        const rawEvent = String(parsed.data.event || parsed.data.status || '').toLowerCase().trim();
-        const rawStatus = String(parsed.data.status || parsed.data.event || '').toLowerCase().trim();
-        const isPaid = PAID_EVENTS.has(rawEvent) || PAID_EVENTS.has(rawStatus);
-
-        console.log('[KORVEX_WEBHOOK_EVENTO]', {
-          rawEvent,
-          rawStatus,
-          isPaid,
-          fullBody: json,
-          refQs,
-        });
-
-        // Extrair campos do payload real da Korvex
-        const body = json as any;
-        const transactionId =
-          body?.transaction?.id ||
-          body?.transactionId ||
-          body?.transaction_id ||
-          body?.id ||
-          '';
-        const externalRef =
-          body?.trackProps?.externalReference ||
-          body?.metadata?.externalReference ||
-          refQs ||
-          '';
-
-        if (!transactionId && !externalRef) {
-          console.warn('[korvex-webhook] sem transactionId nem externalRef');
-          return new Response(JSON.stringify({ error: 'missing transactionId' }), { status: 400, headers: cors });
-        }
-
-        if (!isPaid) {
-          console.log('[korvex-webhook] evento não-pago ignorado', { rawEvent, rawStatus, transactionId });
+        // Ignorar eventos não-pagamento
+        if (!PAID_EVENTS.has(event)) {
+          console.log('[asaas-webhook] evento ignorado', { event, paymentId });
           return new Response(
-            JSON.stringify({ success: true, ignored: true, event: rawEvent }),
+            JSON.stringify({ success: true, ignored: true, event }),
             { status: 200, headers: cors },
           );
         }
 
-        // Localizar pedido: primeiro por external_reference, depois por efi_txid
+        if (!paymentId && !externalRef) {
+          console.warn('[asaas-webhook] sem paymentId nem externalRef');
+          return new Response(JSON.stringify({ error: 'missing payment id' }), { status: 400, headers: cors });
+        }
+
+        // Localizar pedido: primeiro por external_reference, depois por asaas_payment_id
         let order: any = null;
 
         if (externalRef) {
           const { data, error } = await supabaseAdmin
             .from('orders')
-            .select('id, status, amount, external_reference, efi_status, approved_at, tracking_payload, order_email_sent_at')
+            .select('id, status, amount, external_reference, asaas_status, approved_at, tracking_payload, order_email_sent_at')
             .eq('external_reference', externalRef)
             .maybeSingle();
           if (!error) order = data;
         }
 
-        if (!order && transactionId) {
+        if (!order && paymentId) {
           const { data, error } = await supabaseAdmin
             .from('orders')
-            .select('id, status, amount, external_reference, efi_status, approved_at, tracking_payload, order_email_sent_at')
-            .eq('efi_txid', transactionId)
+            .select('id, status, amount, external_reference, asaas_status, approved_at, tracking_payload, order_email_sent_at')
+            .eq('asaas_payment_id', paymentId)
             .maybeSingle();
           if (!error) order = data;
         }
 
-        // Legado
         if (!order) {
-          const extRef = parsed.data.metadata?.externalReference || refQs;
-          if (extRef) {
-            const { data, error } = await supabaseAdmin
-              .from('orders')
-              .select('id, status, amount, external_reference, efi_status, approved_at, tracking_payload, order_email_sent_at')
-              .eq('external_reference', extRef)
-              .maybeSingle();
-            if (!error) order = data;
-          }
-        }
-
-        if (!order) {
-          console.warn('[korvex-webhook] pedido não encontrado', { transactionId, refQs });
+          console.warn('[asaas-webhook] pedido não encontrado', { paymentId, externalRef });
           return new Response(
-            JSON.stringify({ error: 'order not found', transactionId }),
+            JSON.stringify({ error: 'order not found', paymentId }),
             { status: 404, headers: cors },
           );
         }
 
-        console.log('[KORVEX_PEDIDO_ENCONTRADO]', {
+        console.log('[ASAAS_PEDIDO_ENCONTRADO]', {
           order_id: order.id,
           external_reference: order.external_reference,
           status_atual: order.status,
@@ -174,28 +127,28 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
         const alreadyPaid =
           String(order.status || '').toLowerCase() === 'paid' ||
           String(order.status || '').toLowerCase() === 'approved' ||
-          String(order.efi_status || '').toUpperCase() === 'CONFIRMED';
+          String(order.asaas_status || '').toUpperCase() === 'CONFIRMED';
 
         if (!alreadyPaid) {
           const { error: updErr } = await supabaseAdmin
             .from('orders')
             .update({
               status: 'paid',
-              efi_status: 'CONFIRMED',
-              efi_txid: transactionId || order.efi_txid,
+              asaas_status: 'CONFIRMED',
+              asaas_payment_id: paymentId || order.asaas_payment_id,
               approved_at: new Date().toISOString(),
             } as any)
             .eq('id', order.id)
             .neq('status', 'paid');
 
           if (updErr) {
-            console.error('[korvex-webhook] erro ao atualizar pedido', updErr);
+            console.error('[asaas-webhook] erro ao atualizar pedido', updErr);
             return new Response(JSON.stringify({ error: 'update failed' }), { status: 500, headers: cors });
           }
         }
 
-        console.log('[KORVEX_PEDIDO_PAGO]', {
-          transactionId,
+        console.log('[ASAAS_PEDIDO_PAGO]', {
+          paymentId,
           order_id: order.id,
           external_reference: order.external_reference,
         });
@@ -220,10 +173,10 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
               );
           }
         } catch (err) {
-          console.error('[korvex-webhook][rastreio]', err);
+          console.error('[asaas-webhook][rastreio]', err);
         }
 
-        // ===== UTMify =====
+        // ===== UTMify: waiting_payment + paid =====
         try {
           const { data: claimed } = await supabaseAdmin
             .rpc('claim_order_utmify' as any, { _order_id: order.id } as any)
@@ -233,11 +186,11 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
             try {
               await sendUtmifyOrder(orderFull, { status: 'waiting_payment' });
             } catch (err) {
-              console.error('[korvex-webhook][UTMify-waiting]', err);
+              console.error('[asaas-webhook][UTMify-waiting]', err);
             }
 
             const result = await sendUtmifyOrder(orderFull, { status: 'paid' });
-            console.log('[KORVEX_UTMIFY_RESPONSE]', {
+            console.log('[ASAAS_UTMIFY_RESPONSE]', {
               ok: result.ok,
               httpStatus: result.httpStatus,
               responseBody: result.responseBody,
@@ -256,26 +209,20 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
               .eq('id', order.id);
           }
         } catch (err) {
-          console.error('[korvex-webhook][UTMify]', err);
+          console.error('[asaas-webhook][UTMify]', err);
         }
 
-        // ===== Meta CAPI Purchase =====
+        // ===== Meta CAPI Purchase (apenas após pagamento confirmado) =====
         try {
-          console.log('[KORVEX_META_CAPI_CHECK]', {
-            meta_capi_sent_at: (orderFull as any).meta_capi_sent_at,
-            has_pixel_id: !!process.env.META_PIXEL_ID,
-            has_token: !!process.env.META_CONVERSIONS_API_TOKEN,
-            pixel_id: process.env.META_PIXEL_ID,
-          });
           if (!(orderFull as any).meta_capi_sent_at) {
             const metaResult = await sendAndLogMetaCapiPurchase(orderFull, {
               eventId: String(orderFull.external_reference),
-              logTag: '[KORVEX_META_CAPI]',
+              logTag: '[ASAAS_META_CAPI]',
             });
-            console.log('[KORVEX_META_CAPI_RESPONSE]', metaResult);
+            console.log('[ASAAS_META_CAPI_RESPONSE]', metaResult);
           }
         } catch (err) {
-          console.error('[korvex-webhook][Meta CAPI]', err);
+          console.error('[asaas-webhook][Meta CAPI]', err);
         }
 
         // ===== Email aprovado =====
@@ -303,7 +250,7 @@ export const Route = createFileRoute('/api/public/korvex-webhook')({
             }
           }
         } catch (err) {
-          console.error('[korvex-webhook][email]', err);
+          console.error('[asaas-webhook][email]', err);
         }
 
         return new Response(
