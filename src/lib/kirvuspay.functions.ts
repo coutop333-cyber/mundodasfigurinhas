@@ -20,9 +20,10 @@ function getKirvusHeaders(): Record<string, string> {
 }
 
 function getWebhookUrl(): string {
-  const raw = process.env.KIRVUSPAY_WEBHOOK_BASE_URL?.trim() || 'https://copadasfigurinhas.com';
-  const base = raw.replace(/[`'"]/g, '').replace(/\/+$/, '');
-  return `${base}/api/public/kirvuspay-webhook`;
+  // URL FIXA da Edge Function — sem ?ref= para não criar webhook por pedido (limite de 20)
+  // O pedido é identificado pelo transactionId no payload do webhook
+  const supabaseUrl = process.env.SUPABASE_URL?.trim() || 'https://lrkmfhqetfwtdrfuginx.supabase.co';
+  return `${supabaseUrl}/functions/v1/asaas-webhook`;
 }
 
 // ============ Warm ============
