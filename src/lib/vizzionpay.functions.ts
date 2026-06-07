@@ -11,7 +11,7 @@ const VIZZION_BASE = 'https://app.vizzionpay.com.br/api/v1';
 function getVizzionHeaders(): Record<string, string> {
   const pub = process.env.VIZZIONPAY_PUBLIC_KEY?.trim();
   const sec = process.env.VIZZIONPAY_SECRET_KEY?.trim();
-  if (!pub || !sec) throw new Error(`VIZZIONPAY não configurado. pub=${pub ? pub.slice(0,8)+'...' : 'MISSING'} sec=${sec ? 'OK' : 'MISSING'} keys=${Object.keys(process.env).filter(k=>k.startsWith('VIZZION')).join(',')||'nenhuma'}`);
+  if (!pub || !sec) throw new Error('VIZZIONPAY_PUBLIC_KEY / VIZZIONPAY_SECRET_KEY não configurados.');
   return {
     'x-public-key': pub,
     'x-secret-key': sec,
