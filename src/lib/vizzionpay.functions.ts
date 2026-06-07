@@ -6,12 +6,12 @@ import { sendUtmifyOrder } from '@/lib/utmify.server';
 import { sendAndLogMetaCapiPurchase } from '@/lib/meta-capi.server';
 import { sendOrderApprovedEmail } from '@/lib/email/sendOrderApprovedEmail.server';
 
-const KIRVUS_BASE = 'https://app.kirvuspay.com.br/api/v1';
+const VIZZION_BASE = 'https://app.vizzionpay.com.br/api/v1';
 
-function getKirvusHeaders(): Record<string, string> {
-  const pub = process.env.KIRVUSPAY_PUBLIC_KEY?.trim();
-  const sec = process.env.KIRVUSPAY_SECRET_KEY?.trim();
-  if (!pub || !sec) throw new Error('KIRVUSPAY_PUBLIC_KEY / KIRVUSPAY_SECRET_KEY não configurados.');
+function getVizzionHeaders(): Record<string, string> {
+  const pub = process.env.VIZZIONPAY_PUBLIC_KEY?.trim();
+  const sec = process.env.VIZZIONPAY_SECRET_KEY?.trim();
+  if (!pub || !sec) throw new Error('VIZZIONPAY_PUBLIC_KEY / VIZZIONPAY_SECRET_KEY não configurados.');
   return {
     'x-public-key': pub,
     'x-secret-key': sec,
@@ -27,7 +27,7 @@ function getWebhookUrl(): string {
 }
 
 // ============ Warm ============
-export const warmKirvusPix = createServerFn({ method: 'POST' }).handler(async () => {
+export const warmVizzionPix = createServerFn({ method: 'POST' }).handler(async () => {
   return { ok: true };
 });
 
@@ -61,7 +61,7 @@ const createInput = z.object({
 });
 
 // ============ Criar cobrança Pix ============
-export const createKirvusPixPayment = createServerFn({ method: 'POST' })
+export const createVizzionPixPayment = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => createInput.parse(input))
   .handler(async ({ data }) => {
     const totalStartedAt = Date.now();
@@ -97,14 +97,14 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
     }
 
     if (blockReasons.length) {
-      console.error('[kirvus-create][BLOQUEIO]', { motivos: blockReasons, origin });
+      console.error('[vizzion-create][BLOQUEIO]', { motivos: blockReasons, origin });
       throw new Error(`Pagamento bloqueado: ${blockReasons.join('; ')}`);
     }
 
     const pedidoId = data.externalReference;
     const trackingToSave = { ...(data.tracking ?? {}), _source: data.source || 'produto5' } as any;
 
-    // Persistir pedido no banco ANTES de chamar KirvusPay
+    // Persistir pedido no banco ANTES de chamar VizzionPay
     const { error: insertErr } = await supabaseAdmin
       .from('orders')
       .upsert({
@@ -119,7 +119,7 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
       } as any, { onConflict: 'external_reference' });
 
     if (insertErr) {
-      console.error('[kirvus-create] erro ao persistir pedido', insertErr);
+      console.error('[vizzion-create] erro ao persistir pedido', insertErr);
       throw new Error('Não foi possível registrar o pedido. Tente novamente.');
     }
 
@@ -155,9 +155,9 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const res = await fetch(`${KIRVUS_BASE}/gateway/pix/receive`, {
+      const res = await fetch(`${VIZZION_BASE}/gateway/pix/receive`, {
         method: 'POST',
-        headers: getKirvusHeaders(),
+        headers: getVizzionHeaders(),
         body: JSON.stringify(body),
         signal: controller.signal,
       });
@@ -166,14 +166,14 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
       try { upstream = JSON.parse(text); } catch { upstream = { raw: text }; }
 
       if (!res.ok) {
-        console.error('[kirvus-create][ERROR]', { httpStatus, response: upstream, body_sent: body });
+        console.error('[vizzion-create][ERROR]', { httpStatus, response: upstream, body_sent: body });
         const details = upstream?.details
           ? (Array.isArray(upstream.details)
             ? upstream.details.map((d: any) => d?.message || JSON.stringify(d)).join(', ')
             : JSON.stringify(upstream.details))
           : null;
         const msg = upstream?.message || upstream?.error || `HTTP ${httpStatus}`;
-        throw new Error(`Falha ao gerar Pix (KirvusPay): ${msg}${details ? ` — ${details}` : ''}`);
+        throw new Error(`Falha ao gerar Pix (VizzionPay): ${msg}${details ? ` — ${details}` : ''}`);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -192,8 +192,8 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
     let pixBase64: string = rawBase64.startsWith('data:') ? rawBase64.split(',')[1] || '' : rawBase64;
 
     if (!transactionId || !pixCode) {
-      console.error('[kirvus-create][INCOMPLETO]', upstream);
-      throw new Error('KirvusPay retornou cobrança incompleta.');
+      console.error('[vizzion-create][INCOMPLETO]', upstream);
+      throw new Error('VizzionPay retornou cobrança incompleta.');
     }
 
     // Gerar QR base64 local se não veio
@@ -203,7 +203,7 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
         const dataUrl = await QRCode.toDataURL(pixCode, { margin: 1, width: 320 });
         pixBase64 = dataUrl.split(',')[1] || '';
       } catch (e) {
-        console.error('[kirvus-create] erro ao gerar QR base64', e);
+        console.error('[vizzion-create] erro ao gerar QR base64', e);
       }
     }
 
@@ -218,26 +218,26 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
         efi_expires_at: null,
         efi_status: 'PENDING',
         efi_payload: upstream as any,
-        payment_provider: 'kirvuspay',
+        payment_provider: 'vizzionpay',
       } as any)
       .eq('external_reference', pedidoId);
 
     if (updateErr) {
-      console.error('[kirvus-create] erro ao salvar dados', updateErr);
+      console.error('[vizzion-create] erro ao salvar dados', updateErr);
       throw new Error('Pix gerado, mas não foi possível registrar o vínculo do pedido.');
     }
 
-    console.log('[kirvus-create][OK]', { pedidoId, transactionId, total_ms: Date.now() - totalStartedAt });
+    console.log('[vizzion-create][OK]', { pedidoId, transactionId, total_ms: Date.now() - totalStartedAt });
 
     // UTMify: waiting_payment
     try {
       const { data: orderFull } = await supabaseAdmin.from('orders').select('*').eq('external_reference', pedidoId).maybeSingle();
       if (orderFull) {
         const result = await sendUtmifyOrder(orderFull, { status: 'waiting_payment' });
-        console.log('[kirvus-create][UTMify-waiting]', { ok: result.ok, httpStatus: result.httpStatus });
+        console.log('[vizzion-create][UTMify-waiting]', { ok: result.ok, httpStatus: result.httpStatus });
       }
     } catch (err) {
-      console.error('[kirvus-create][UTMify-waiting] erro', err);
+      console.error('[vizzion-create][UTMify-waiting] erro', err);
     }
 
     return {
@@ -256,7 +256,7 @@ export const createKirvusPixPayment = createServerFn({ method: 'POST' })
 // ============ Polling de status ============
 const statusInput = z.object({ txid: z.string().min(4).max(120) });
 
-export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
+export const getVizzionPaymentStatus = createServerFn({ method: 'POST' })
   .inputValidator((input: unknown) => statusInput.parse(input))
   .handler(async ({ data }) => {
     const { data: order } = await supabaseAdmin
@@ -277,13 +277,13 @@ export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
       internal === 'rejected' || internal === 'cancelled' || internal === 'canceled' ||
       gw === 'EXPIRED' || gw === 'CANCELLED';
 
-    // Fallback: consulta KirvusPay diretamente
+    // Fallback: consulta VizzionPay diretamente
     if (!isPaid && !isFailed) {
       try {
-        const kirvusStatus = await consultKirvusTransaction(data.txid);
-        console.log('[kirvus-status][fallback]', { txid: data.txid, status: kirvusStatus.status });
+        const vizzionStatus = await consultVizzionTransaction(data.txid);
+        console.log('[vizzion-status][fallback]', { txid: data.txid, status: vizzionStatus.status });
 
-        if (kirvusStatus.status === 'confirmed') {
+        if (vizzionStatus.status === 'confirmed') {
           await supabaseAdmin.from('orders')
             .update({ status: 'paid', efi_status: 'CONFIRMED', approved_at: new Date().toISOString() } as any)
             .eq('id', order.id);
@@ -301,7 +301,7 @@ export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
                   { onConflict: 'codigo_pedido', ignoreDuplicates: true }
                 );
               }
-            } catch (e) { console.error('[kirvus-status][rastreio]', e); }
+            } catch (e) { console.error('[vizzion-status][rastreio]', e); }
 
             // UTMify
             try {
@@ -309,21 +309,21 @@ export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
               if (claimed) {
                 try { await sendUtmifyOrder(orderFull, { status: 'waiting_payment' }); } catch {}
                 const result = await sendUtmifyOrder(orderFull, { status: 'paid' });
-                console.log('[kirvus-status][UTMify]', { ok: result.ok, httpStatus: result.httpStatus });
+                console.log('[vizzion-status][UTMify]', { ok: result.ok, httpStatus: result.httpStatus });
                 await supabaseAdmin.from('orders').update({
                   utmify_payload: result.payload as any, utmify_http_status: result.httpStatus,
                   utmify_response: result.responseBody, utmify_error: result.error,
                   utmify_sent_at: result.ok ? new Date().toISOString() : null, utmify_processing_at: null,
                 } as any).eq('id', order.id);
               }
-            } catch (e) { console.error('[kirvus-status][UTMify]', e); }
+            } catch (e) { console.error('[vizzion-status][UTMify]', e); }
 
             // Meta CAPI
             try {
               if (!(orderFull as any).meta_capi_sent_at) {
-                await sendAndLogMetaCapiPurchase(orderFull, { eventId: String(orderFull.external_reference), logTag: '[KIRVUS_META_CAPI]' });
+                await sendAndLogMetaCapiPurchase(orderFull, { eventId: String(orderFull.external_reference), logTag: '[VIZZION_META_CAPI]' });
               }
-            } catch (e) { console.error('[kirvus-status][Meta CAPI]', e); }
+            } catch (e) { console.error('[vizzion-status][Meta CAPI]', e); }
 
             // Email
             try {
@@ -342,18 +342,18 @@ export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
                   });
                 }
               }
-            } catch (e) { console.error('[kirvus-status][email]', e); }
-          } catch (e) { console.error('[kirvus-status][integrações]', e); }
+            } catch (e) { console.error('[vizzion-status][email]', e); }
+          } catch (e) { console.error('[vizzion-status][integrações]', e); }
 
           return { status: 'approved', external_reference: order.external_reference || undefined, transaction_amount: Number(order.amount || 0) };
         }
 
-        if (kirvusStatus.status === 'expired') {
+        if (vizzionStatus.status === 'expired') {
           await supabaseAdmin.from('orders').update({ efi_status: 'EXPIRED' } as any).eq('id', order.id);
           return { status: 'rejected', external_reference: order.external_reference || undefined, transaction_amount: 0 };
         }
       } catch (err) {
-        console.error('[kirvus-status][fallback] erro', err);
+        console.error('[vizzion-status][fallback] erro', err);
       }
     }
 
@@ -372,10 +372,10 @@ export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
             utmify_sent_at: result.ok ? new Date().toISOString() : null, utmify_processing_at: null,
           } as any).eq('id', order.id);
           if (!(orderFull as any).meta_capi_sent_at) {
-            await sendAndLogMetaCapiPurchase(orderFull, { eventId: String(orderFull.external_reference), logTag: '[KIRVUS_META_CAPI_FALLBACK]' }).catch(() => {});
+            await sendAndLogMetaCapiPurchase(orderFull, { eventId: String(orderFull.external_reference), logTag: '[VIZZION_META_CAPI_FALLBACK]' }).catch(() => {});
           }
         }
-      } catch (e) { console.error('[kirvus-status][UTMify-paid-fallback]', e); }
+      } catch (e) { console.error('[vizzion-status][UTMify-paid-fallback]', e); }
     }
 
     return {
@@ -385,17 +385,17 @@ export const getKirvusPaymentStatus = createServerFn({ method: 'POST' })
     };
   });
 
-// ============ Consulta direta na KirvusPay ============
-export async function consultKirvusTransaction(transactionId: string): Promise<{
+// ============ Consulta direta na VizzionPay ============
+export async function consultVizzionTransaction(transactionId: string): Promise<{
   status: 'pending' | 'confirmed' | 'expired' | 'unknown';
   raw: any;
 }> {
-  const pub = process.env.KIRVUSPAY_PUBLIC_KEY?.trim();
-  const sec = process.env.KIRVUSPAY_SECRET_KEY?.trim();
+  const pub = process.env.VIZZIONPAY_PUBLIC_KEY?.trim();
+  const sec = process.env.VIZZIONPAY_SECRET_KEY?.trim();
   if (!pub || !sec) return { status: 'unknown', raw: null };
 
   try {
-    const res = await fetch(`${KIRVUS_BASE}/gateway/transactions?id=${encodeURIComponent(transactionId)}`, {
+    const res = await fetch(`${VIZZION_BASE}/gateway/transactions?id=${encodeURIComponent(transactionId)}`, {
       method: 'GET',
       headers: { 'x-public-key': pub, 'x-secret-key': sec, 'Content-Type': 'application/json' },
     });
@@ -403,7 +403,7 @@ export async function consultKirvusTransaction(transactionId: string): Promise<{
     let json: any = null;
     try { json = JSON.parse(text); } catch { json = { raw: text }; }
 
-    console.log('[kirvus-consult]', { transactionId, httpStatus: res.status, status: json?.status });
+    console.log('[vizzion-consult]', { transactionId, httpStatus: res.status, status: json?.status });
 
     const statusRaw = String(
       json?.status || json?.transaction?.status || json?.data?.status ||
@@ -417,7 +417,7 @@ export async function consultKirvusTransaction(transactionId: string): Promise<{
     if (EXPIRED.has(statusRaw)) return { status: 'expired', raw: json };
     return { status: 'pending', raw: json };
   } catch (err) {
-    console.error('[kirvus-consult] erro', err);
+    console.error('[vizzion-consult] erro', err);
     return { status: 'unknown', raw: null };
   }
 }
