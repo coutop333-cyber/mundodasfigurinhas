@@ -23,6 +23,7 @@ const searchSchema = z.object({
   email: z.string().optional(),
   nome: z.string().optional(),
   telefone: z.string().optional(),
+  cpf: z.string().optional(),
 });
 
 export const Route = createFileRoute('/upsell')({
@@ -39,7 +40,7 @@ export const Route = createFileRoute('/upsell')({
 const FRETE_PRECO = 18.99;
 
 function UpsellPage() {
-  const { ref, id, value, product, email, nome, telefone } = Route.useSearch();
+  const { ref, id, value, product, email, nome, telefone, cpf } = Route.useSearch();
   const navigate = useNavigate();
   const createPixPayment = useServerFn(createKirvusPixPayment);
 
@@ -70,6 +71,7 @@ function UpsellPage() {
           payerEmail: email,
           payerName: nome,
           payerPhone: telefone,
+          payerDocument: cpf,
           tracking: {
             ...tracking,
             ...(nome ? { name: nome } : {}),

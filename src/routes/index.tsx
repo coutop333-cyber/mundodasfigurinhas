@@ -293,6 +293,7 @@ function HomePage() {
         email: fd.email,
         nome: fd.nome,
         telefone: fd.telefone,
+        cpf: fd.cpf,
       },
       replace: true,
     });
