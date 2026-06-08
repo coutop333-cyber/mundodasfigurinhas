@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useMetaPixel } from '@/hooks/useMetaPixel';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
-import { createVizzionPixPayment, warmVizzionPix } from '@/lib/vizzionpay.functions';
+import { createKirvusPixPayment, warmKirvusPix } from '@/lib/kirvuspay.functions';
 import { captureTracking, newEventId } from '@/lib/tracking';
 import { CheckoutForm } from '@/components/CheckoutForm';
 import type { PixPaymentInfo } from '@/components/PixCheckoutDialog';
@@ -168,11 +168,11 @@ function HomePage() {
     });
   }, [trackViewContent]);
 
-  const createPixPayment = useServerFn(createVizzionPixPayment);
-  const warmPixProxy = useServerFn(warmVizzionPix);
+  const createPixPayment = useServerFn(createKirvusPixPayment);
+  const warmPixProxy = useServerFn(warmKirvusPix);
 
   useEffect(() => {
-    const key = 'vizzion_warmed_copa';
+    const key = 'kirvus_warmed_at';
     const last = Number(window.sessionStorage.getItem(key) || 0);
     if (Date.now() - last < 10 * 60 * 1000) return;
     window.sessionStorage.setItem(key, String(Date.now()));
