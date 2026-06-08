@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Truck, AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useServerFn } from '@tanstack/react-start';
 import { createKirvusPixPayment } from '@/lib/kirvuspay.functions';
+import { captureTracking, newEventId } from '@/lib/tracking';
 import { PixCheckoutDialog } from '@/components/PixCheckoutDialog';
 import type { PixPaymentInfo } from '@/components/PixCheckoutDialog';
 import logoPanini from '@/assets/logo-panini.png';
@@ -58,7 +59,8 @@ function UpsellPage() {
     if (generating) return;
     setGenerating(true);
     try {
-      const upsellRef = `upsell-frete-${ref || Date.now()}`;
+      const upsellRef = `upsell-frete-${newEventId('upsell')}`;
+      const tracking = captureTracking();
       const p = await createPixPayment({
         data: {
           kitId: 97,
@@ -68,6 +70,12 @@ function UpsellPage() {
           payerEmail: email,
           payerName: nome,
           payerPhone: telefone,
+          tracking: {
+            ...tracking,
+            ...(nome ? { name: nome } : {}),
+            ...(email ? { email } : {}),
+            ...(telefone ? { phone: telefone } : {}),
+          } as any,
           source: 'produto5' as any,
         },
       });
