@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UpsellRouteImport } from './routes/upsell'
 import { Route as ObrigadoRouteImport } from './routes/obrigado'
 import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,6 +21,11 @@ import { Route as AdminEmailMassaRouteImport } from './routes/admin/email-massa'
 import { Route as ApiPublicPedidoStatusRouteImport } from './routes/api/public/pedido-status'
 import { Route as ApiPublicAsaasWebhookRouteImport } from './routes/api/public/asaas-webhook'
 
+const UpsellRoute = UpsellRouteImport.update({
+  id: '/upsell',
+  path: '/upsell',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObrigadoRoute = ObrigadoRouteImport.update({
   id: '/obrigado',
   path: '/obrigado',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/guia': typeof GuiaRoute
   '/obrigado': typeof ObrigadoRoute
+  '/upsell': typeof UpsellRoute
   '/admin/email-massa': typeof AdminEmailMassaRoute
   '/admin/rastreamento-retroativo': typeof AdminRastreamentoRetroativoRoute
   '/admin/rastreios': typeof AdminRastreiosRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/guia': typeof GuiaRoute
   '/obrigado': typeof ObrigadoRoute
+  '/upsell': typeof UpsellRoute
   '/admin/email-massa': typeof AdminEmailMassaRoute
   '/admin/rastreamento-retroativo': typeof AdminRastreamentoRetroativoRoute
   '/admin/rastreios': typeof AdminRastreiosRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/guia': typeof GuiaRoute
   '/obrigado': typeof ObrigadoRoute
+  '/upsell': typeof UpsellRoute
   '/admin/email-massa': typeof AdminEmailMassaRoute
   '/admin/rastreamento-retroativo': typeof AdminRastreamentoRetroativoRoute
   '/admin/rastreios': typeof AdminRastreiosRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/guia'
     | '/obrigado'
+    | '/upsell'
     | '/admin/email-massa'
     | '/admin/rastreamento-retroativo'
     | '/admin/rastreios'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/'
     | '/guia'
     | '/obrigado'
+    | '/upsell'
     | '/admin/email-massa'
     | '/admin/rastreamento-retroativo'
     | '/admin/rastreios'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/guia'
     | '/obrigado'
+    | '/upsell'
     | '/admin/email-massa'
     | '/admin/rastreamento-retroativo'
     | '/admin/rastreios'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GuiaRoute: typeof GuiaRoute
   ObrigadoRoute: typeof ObrigadoRoute
+  UpsellRoute: typeof UpsellRoute
   AdminEmailMassaRoute: typeof AdminEmailMassaRoute
   AdminRastreamentoRetroativoRoute: typeof AdminRastreamentoRetroativoRoute
   AdminRastreiosRoute: typeof AdminRastreiosRoute
@@ -163,6 +176,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/upsell': {
+      id: '/upsell'
+      path: '/upsell'
+      fullPath: '/upsell'
+      preLoaderRoute: typeof UpsellRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/obrigado': {
       id: '/obrigado'
       path: '/obrigado'
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuiaRoute: GuiaRoute,
   ObrigadoRoute: ObrigadoRoute,
+  UpsellRoute: UpsellRoute,
   AdminEmailMassaRoute: AdminEmailMassaRoute,
   AdminRastreamentoRetroativoRoute: AdminRastreamentoRetroativoRoute,
   AdminRastreiosRoute: AdminRastreiosRoute,

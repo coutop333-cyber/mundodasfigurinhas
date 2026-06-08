@@ -282,9 +282,18 @@ function HomePage() {
     });
     setUnitsLeft((prev) => Math.max(5, prev - 1));
     setReviewOpen(false);
+    const fd = formDataRef.current || {};
     navigate({
-      to: '/obrigado',
-      search: { ref: p.external_reference, id: String(p.id), value: p.transaction_amount, product: KIT.quantity, status: 'approved' },
+      to: '/upsell',
+      search: {
+        ref: p.external_reference,
+        id: String(p.id),
+        value: p.transaction_amount,
+        product: KIT.quantity,
+        email: fd.email,
+        nome: fd.nome,
+        telefone: fd.telefone,
+      },
       replace: true,
     });
   };
