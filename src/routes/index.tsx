@@ -131,6 +131,7 @@ function HomePage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewProduct, setReviewProduct] = useState<OrderProduct | null>(null);
   const formDataRef = useRef<{ nome?: string; email?: string; telefone?: string; cpf?: string } | null>(null);
+  const upsellSelectedRef = useRef(false);
   const eventIdRef = useRef<string | null>(null);
   const [selectedKitId, setSelectedKitId] = useState<number>(KIT_20.id);
   const KIT = KITS.find((k) => k.id === selectedKitId) ?? KITS[0];
@@ -234,8 +235,8 @@ function HomePage() {
       const payment = await createPixPayment({
         data: {
           kitId: selectedKitId === -99 ? 99 : KIT.id,
-          title: selectedKitId === -99 ? '1 FIGURINHA TESTE COPA 2026' : KIT.quantity,
-          unitPrice: selectedKitId === -99 ? 5.00 : KIT.price,
+          title: selectedKitId === -99 ? '1 FIGURINHA TESTE COPA 2026' : (upsellSelectedRef.current ? `${KIT.quantity} + 10 PACOTES EXTRA` : KIT.quantity),
+          unitPrice: selectedKitId === -99 ? 5.00 : (KIT.price + (upsellSelectedRef.current ? 29.90 : 0)),
           externalReference: eventId,
           payerEmail: fd.email,
           payerName: fd.nome,
@@ -829,6 +830,7 @@ function HomePage() {
         primaryColor={VERDE}
         accentColor={AMARELO}
         payButtonLabel={(total) => `🏆 Pagar R$ ${total} com Pix`}
+        onUpsellChange={(selected) => { upsellSelectedRef.current = selected; }}
       />
     </div>
   );

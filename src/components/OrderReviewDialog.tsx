@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Copy, Check, QrCode, Truck, Shield, Zap } from 'lucide-react';
+import { Loader2, Copy, Check, QrCode, Truck, Shield, Zap, Plus, Gift, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { useServerFn } from '@tanstack/react-start';
 import { getKirvusPaymentStatus } from '@/lib/kirvuspay.functions';
@@ -30,6 +30,7 @@ interface Props {
   accentColor?: string;
   headerEyebrow?: string;
   payButtonLabel?: (total: string) => string;
+  onUpsellChange?: (selected: boolean) => void;
 }
 
 export function OrderReviewDialog({
@@ -44,6 +45,7 @@ export function OrderReviewDialog({
   accentColor,
   headerEyebrow,
   payButtonLabel,
+  onUpsellChange,
 }: Props) {
   const primary = primaryColor;
   const [generating, setGenerating] = useState(false);
@@ -56,6 +58,9 @@ export function OrderReviewDialog({
   const addPaymentInfoFiredRef = useRef(false);
   const [shipping, setShipping] = useState<'gratis' | 'expresso'>('gratis');
   const shippingCost = shipping === 'expresso' ? 16.9 : 0;
+  const [upsellSelected, setUpsellSelected] = useState(false);
+  const UPSELL_PRICE = 29.90;
+  const handleUpsellToggle = (v: boolean) => { setUpsellSelected(v); onUpsellChange?.(v); };
 
   useEffect(() => {
     if (open) {
@@ -130,7 +135,7 @@ export function OrderReviewDialog({
 
   const isApproved = status === 'approved';
   const isFailed = status === 'rejected' || status === 'cancelled';
-  const total = (product?.price ?? 0) + shippingCost;
+  const total = (product?.price ?? 0) + shippingCost + (upsellSelected ? UPSELL_PRICE : 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -176,6 +181,60 @@ export function OrderReviewDialog({
                     R$ {product.price.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
+              </div>
+
+              {/* UPSELL AGRESSIVO */}
+              <div
+                className="rounded-2xl overflow-hidden border-2 cursor-pointer transition-all"
+                style={{ borderColor: upsellSelected ? '#dc2626' : '#fca5a5', background: upsellSelected ? '#fef2f2' : '#fff5f5' }}
+                onClick={() => handleUpsellToggle(!upsellSelected)}
+              >
+                {/* Faixa topo */}
+                <div className="flex items-center justify-center gap-2 py-2 px-3" style={{ background: 'linear-gradient(90deg, #dc2626, #ef4444)' }}>
+                  <Flame className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" />
+                  <span className="text-white text-[11px] font-black uppercase tracking-widest">Oferta exclusiva — só agora!</span>
+                  <Flame className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" />
+                </div>
+
+                <div className="p-3 flex items-center gap-3">
+                  {/* Checkbox visual */}
+                  <div
+                    className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+                    style={{ borderColor: upsellSelected ? '#dc2626' : '#fca5a5', backgroundColor: upsellSelected ? '#dc2626' : 'white' }}
+                  >
+                    {upsellSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Plus className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      <p className="text-sm font-black text-gray-900 leading-tight">
+                        Leve mais <span className="text-red-600">10 pacotes</span> por apenas
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-xl font-black text-red-600">R$ 29,90</span>
+                      <span className="text-[10px] bg-red-100 text-red-700 font-black px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        R$ 2,99/pacote
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      70 figurinhas a mais · maior chance de completar o álbum
+                    </p>
+                  </div>
+
+                  <div className="shrink-0">
+                    <Gift className="w-8 h-8 text-red-400" />
+                  </div>
+                </div>
+
+                {upsellSelected && (
+                  <div className="px-3 pb-3">
+                    <div className="rounded-xl bg-red-600 text-white text-xs font-black text-center py-2 uppercase tracking-wide">
+                      ✅ +10 pacotes adicionados ao seu pedido!
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Opções de frete */}
@@ -235,6 +294,14 @@ export function OrderReviewDialog({
                   <span className="text-gray-600">Subtotal</span>
                   <span className="font-medium text-gray-900">R$ {product.price.toFixed(2).replace('.', ',')}</span>
                 </div>
+                {upsellSelected && (
+                  <div className="flex items-center justify-between px-4 py-3 text-sm border-t">
+                    <span className="flex items-center gap-1.5 text-red-600 font-semibold">
+                      <Gift className="w-3.5 h-3.5" /> +10 pacotes extra
+                    </span>
+                    <span className="font-bold text-red-600">+ R$ 29,90</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between px-4 py-3 text-sm">
                   <span className="flex items-center gap-2 text-gray-600">
                     <Truck className="w-4 h-4 text-green-600" /> Frete
