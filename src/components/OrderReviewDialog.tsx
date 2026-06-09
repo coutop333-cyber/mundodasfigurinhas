@@ -59,7 +59,16 @@ export function OrderReviewDialog({
   const [shipping, setShipping] = useState<'gratis' | 'expresso'>('gratis');
   const shippingCost = shipping === 'expresso' ? 16.9 : 0;
   const [upsellSelected, setUpsellSelected] = useState(false);
-  const UPSELL_PRICE = 29.90;
+
+  // Upsell dinâmico por faixa de preço do produto principal
+  const basePrice = product?.price ?? 0;
+  const upsellConfig = basePrice <= 60
+    ? { price: 48.20, perUnit: 4.82 }
+    : basePrice <= 100
+    ? { price: 38.00, perUnit: 3.80 }
+    : { price: 29.90, perUnit: 2.99 };
+  const UPSELL_PRICE = upsellConfig.price;
+
   const handleUpsellToggle = (v: boolean) => { setUpsellSelected(v); onUpsellChange?.(v); };
 
   useEffect(() => {
@@ -213,9 +222,9 @@ export function OrderReviewDialog({
                       </p>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-xl font-black text-red-600">R$ 29,90</span>
+                      <span className="text-xl font-black text-red-600">R$ {UPSELL_PRICE.toFixed(2).replace('.', ',')}</span>
                       <span className="text-[10px] bg-red-100 text-red-700 font-black px-2 py-0.5 rounded-full uppercase tracking-wide">
-                        R$ 2,99/pacote
+                        R$ {upsellConfig.perUnit.toFixed(2).replace('.', ',')}/pacote
                       </span>
                     </div>
                     <p className="text-[11px] text-gray-500 mt-0.5">
@@ -299,7 +308,7 @@ export function OrderReviewDialog({
                     <span className="flex items-center gap-1.5 text-red-600 font-semibold">
                       <Gift className="w-3.5 h-3.5" /> +10 pacotes extra
                     </span>
-                    <span className="font-bold text-red-600">+ R$ 29,90</span>
+                    <span className="font-bold text-red-600">+ R$ {UPSELL_PRICE.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between px-4 py-3 text-sm">
