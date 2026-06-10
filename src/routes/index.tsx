@@ -102,17 +102,50 @@ const KITS: Kit[] = [
     pricePerPack: 'R$ 4,26',
     contentId: 'copa-2026-30pacotes',
     heroImage: promoHero30,
-    badge: '⭐ Mais vendido',
+  },
+  {
+    id: 4,
+    packs: 40,
+    stickers: 280,
+    quantity: '40 PACOTES DE FIGURINHAS PANINI COPA DO MUNDO FIFA 2026',
+    shortLabel: '40 pacotes · 280 figurinhas',
+    price: 160.00,
+    pricePerUnit: 160.00,
+    oldPrice: 499.80,
+    savings: 339.80,
+    discount: 68,
+    pricePerPack: 'R$ 4,00',
+    contentId: 'copa-2026-40pacotes',
+    heroImage: promoHero30,
+  },
+  {
+    id: 5,
+    packs: 60,
+    stickers: 420,
+    quantity: '60 PACOTES DE FIGURINHAS PANINI COPA DO MUNDO FIFA 2026 — PACOTE OURO',
+    shortLabel: '60 pacotes · 420 figurinhas',
+    price: 215.00,
+    pricePerUnit: 215.00,
+    oldPrice: 749.70,
+    savings: 534.70,
+    discount: 71,
+    pricePerPack: 'R$ 3,58',
+    contentId: 'copa-2026-60pacotes',
+    heroImage: promoHero30,
+    badge: '🥇 PACOTE OURO',
   },
 ];
 
 const KIT_20 = KITS.find((k) => k.packs === 20)!;
 const KIT_30 = KITS.find((k) => k.packs === 30)!;
+const KIT_60 = KITS.find((k) => k.packs === 60)!;
 
 const displayImagesByKit: Record<number, { image: string; title: string }[]> = {
   1: [{ image: promoHero, title: 'Kit 20 Pacotes Copa 2026' }],
   2: [{ image: promoHero30, title: 'Kit 30 Pacotes Copa 2026' }],
   3: [{ image: promoHero, title: 'Kit 10 Pacotes Copa 2026' }],
+  4: [{ image: promoHero30, title: 'Kit 40 Pacotes Copa 2026' }],
+  5: [{ image: promoHero30, title: 'Pacote Ouro 60 Pacotes Copa 2026' }],
 };
 
 const REVIEWS = [
@@ -133,7 +166,7 @@ function HomePage() {
   const formDataRef = useRef<{ nome?: string; email?: string; telefone?: string; cpf?: string } | null>(null);
   const upsellSelectedRef = useRef(false);
   const eventIdRef = useRef<string | null>(null);
-  const [selectedKitId, setSelectedKitId] = useState<number>(KIT_20.id);
+  const [selectedKitId, setSelectedKitId] = useState<number>(KIT_60.id);
   const KIT = KITS.find((k) => k.id === selectedKitId) ?? KITS[0];
   const displayImages = displayImagesByKit[selectedKitId] ?? displayImagesByKit[KITS[0].id];
   useEffect(() => { setCurrentImageIndex(0); }, [selectedKitId]);
@@ -406,8 +439,63 @@ function HomePage() {
             {/* Seletor de Kit */}
             <div>
               <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: AZUL }}>Escolha seu kit:</p>
-              <div className="grid grid-cols-3 gap-2">
-                {KITS.map((k) => {
+
+              {/* Kit Ouro — destaque máximo */}
+              {(() => {
+                const k = KITS.find(k => k.id === 5)!;
+                const sel = selectedKitId === 5;
+                return (
+                  <button
+                    onClick={() => setSelectedKitId(5)}
+                    className="relative w-full rounded-2xl p-3.5 text-left transition-all active:scale-[0.98] mb-2 overflow-hidden"
+                    style={{
+                      background: sel ? 'linear-gradient(135deg, #92400e, #b45309, #d97706)' : 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                      border: `3px solid ${sel ? '#f59e0b' : '#f59e0b'}`,
+                      boxShadow: sel ? '0 8px 32px rgba(217,119,6,0.5)' : '0 4px 16px rgba(217,119,6,0.2)',
+                    }}
+                  >
+                    {/* Brilho animado */}
+                    <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.6) 50%, transparent 70%)', backgroundSize: '200% 200%' }} />
+
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide" style={{ background: '#92400e', color: '#fef3c7' }}>
+                          🥇 PACOTE OURO
+                        </span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase" style={{ background: '#dc2626', color: '#fff' }}>
+                          🔥 +{k.discount}% OFF
+                        </span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase" style={{ background: VERDE, color: '#fff' }}>
+                          ✅ MAIS INDICADO
+                        </span>
+                      </div>
+                      {sel && <Check className="w-5 h-5 shrink-0" strokeWidth={3} style={{ color: '#92400e' }} />}
+                    </div>
+
+                    <div className="flex items-end justify-between gap-2">
+                      <div>
+                        <p className="font-black text-lg leading-tight" style={{ color: sel ? '#fef3c7' : '#92400e', fontFamily: 'Archivo Black, sans-serif' }}>
+                          60 pacotes · 420 figurinhas
+                        </p>
+                        <p className="text-xs mt-0.5 font-semibold" style={{ color: sel ? '#fde68a' : '#b45309' }}>
+                          Maior chance de completar o álbum · economize R$ {k.savings.toFixed(2).replace('.', ',')}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs line-through opacity-60" style={{ color: sel ? '#fde68a' : '#b45309' }}>R$ {k.oldPrice.toFixed(2).replace('.', ',')}</p>
+                        <p className="text-2xl font-black" style={{ color: sel ? '#fef3c7' : '#92400e', fontFamily: 'Archivo Black, sans-serif' }}>
+                          R$ 215,00
+                        </p>
+                        <p className="text-[10px] font-bold" style={{ color: sel ? '#fde68a' : '#b45309' }}>R$ 3,58/pacote</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })()}
+
+              {/* Demais kits */}
+              <div className="grid grid-cols-2 gap-2">
+                {KITS.filter(k => k.id !== 5).map((k) => {
                   const sel = k.id === selectedKitId;
                   return (
                     <button
@@ -419,6 +507,7 @@ function HomePage() {
                         border: `2.5px solid ${sel ? AMARELO : '#e5e7eb'}`,
                         color: sel ? '#fff' : '#111',
                         boxShadow: sel ? `0 6px 18px rgba(0,156,59,0.3)` : '0 1px 2px rgba(0,0,0,0.05)',
+                        opacity: 0.85,
                       }}
                     >
                       {k.badge && (
@@ -428,7 +517,7 @@ function HomePage() {
                       )}
                       <span className="block text-sm font-black" style={{ fontFamily: 'Archivo Black, sans-serif' }}>{k.packs} pacotes</span>
                       <span className="block text-[10px] opacity-80 mt-0.5">{k.stickers} figurinhas</span>
-                      <span className="block mt-2 text-base font-black" style={{ color: sel ? AMARELO : VERDE, fontFamily: 'Archivo Black, sans-serif' }}>
+                      <span className="block mt-1.5 text-base font-black" style={{ color: sel ? AMARELO : VERDE, fontFamily: 'Archivo Black, sans-serif' }}>
                         R$ {k.price.toFixed(2).replace('.', ',')}
                       </span>
                       <span className="block text-[9px] opacity-70">{k.pricePerPack}/pacote</span>
@@ -579,20 +668,20 @@ function HomePage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
             <Button
               disabled={generating}
-              onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
+              onClick={() => { setSelectedKitId(KIT_60.id); handleBuyClick(); }}
               className="flex-1 py-5 text-base font-black uppercase text-white"
-              style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, fontFamily: 'Archivo Black, sans-serif', boxShadow: `0 6px 20px rgba(0,156,59,0.4)` }}
+              style={{ background: 'linear-gradient(135deg, #92400e, #d97706)', fontFamily: 'Archivo Black, sans-serif', boxShadow: '0 6px 20px rgba(217,119,6,0.5)' }}
             >
-              🏆 30 pacotes — R$ 127,90
+              🥇 60 pacotes — R$ 215,00
             </Button>
             <Button
               disabled={generating}
-              onClick={() => { setSelectedKitId(KIT_20.id); handleBuyClick(); }}
+              onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
               variant="outline"
               className="flex-1 py-5 text-base font-bold uppercase border-2"
               style={{ borderColor: AMARELO, color: AMARELO, backgroundColor: 'transparent' }}
             >
-              20 pacotes — R$ 97,00
+              30 pacotes — R$ 127,90
             </Button>
           </div>
         </div>
@@ -688,20 +777,20 @@ function HomePage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
               <Button
                 disabled={generating}
-                onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
+                onClick={() => { setSelectedKitId(KIT_60.id); handleBuyClick(); }}
                 className="flex-1 py-5 text-base font-black uppercase text-white"
-                style={{ background: `linear-gradient(135deg, ${VERDE}, ${VERDE_ESCURO})`, boxShadow: `0 6px 20px rgba(0,156,59,0.4)` }}
+                style={{ background: 'linear-gradient(135deg, #92400e, #d97706)', boxShadow: '0 6px 20px rgba(217,119,6,0.5)' }}
               >
-                🏆 30 pacotes — R$ 127,90
+                🥇 60 pacotes — R$ 215,00
               </Button>
               <Button
                 disabled={generating}
-                onClick={() => { setSelectedKitId(KIT_20.id); handleBuyClick(); }}
+                onClick={() => { setSelectedKitId(KIT_30.id); handleBuyClick(); }}
                 variant="outline"
                 className="flex-1 py-5 text-base font-bold uppercase border-2"
                 style={{ borderColor: AMARELO, color: AMARELO, backgroundColor: 'transparent' }}
               >
-                20 pacotes — R$ 97,00
+                30 pacotes — R$ 127,90
               </Button>
             </div>
           </div>
