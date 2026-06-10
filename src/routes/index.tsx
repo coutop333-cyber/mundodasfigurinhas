@@ -79,12 +79,12 @@ const KITS: Kit[] = [
     stickers: 140,
     quantity: '20 PACOTES DE FIGURINHAS PANINI COPA DO MUNDO FIFA 2026',
     shortLabel: '20 pacotes · 140 figurinhas',
-    price: 97.00,
-    pricePerUnit: 97.00,
+    price: 97.90,
+    pricePerUnit: 97.90,
     oldPrice: 249.90,
     savings: 152.90,
     discount: 61,
-    pricePerPack: 'R$ 4,85',
+    pricePerPack: 'R$ 4,90',
     contentId: 'copa-2026-20pacotes',
     heroImage: promoHero,
   },
@@ -109,12 +109,12 @@ const KITS: Kit[] = [
     stickers: 280,
     quantity: '40 PACOTES DE FIGURINHAS PANINI COPA DO MUNDO FIFA 2026',
     shortLabel: '40 pacotes · 280 figurinhas',
-    price: 160.00,
-    pricePerUnit: 160.00,
+    price: 167.90,
+    pricePerUnit: 167.90,
     oldPrice: 499.80,
     savings: 339.80,
     discount: 68,
-    pricePerPack: 'R$ 4,00',
+    pricePerPack: 'R$ 4,20',
     contentId: 'copa-2026-40pacotes',
     heroImage: promoHero30,
   },
@@ -124,12 +124,12 @@ const KITS: Kit[] = [
     stickers: 420,
     quantity: '60 PACOTES DE FIGURINHAS PANINI COPA DO MUNDO FIFA 2026 — PACOTE OURO',
     shortLabel: '60 pacotes · 420 figurinhas',
-    price: 215.00,
-    pricePerUnit: 215.00,
+    price: 217.90,
+    pricePerUnit: 217.90,
     oldPrice: 749.70,
     savings: 534.70,
     discount: 71,
-    pricePerPack: 'R$ 3,58',
+    pricePerPack: 'R$ 3,63',
     contentId: 'copa-2026-60pacotes',
     heroImage: promoHero30,
     badge: '🥇 PACOTE OURO',
@@ -170,7 +170,7 @@ function HomePage() {
     if (basePrice <= 60)  return 48.20;
     if (basePrice <= 100) return 38.00;
     if (basePrice <= 130) return 29.90;
-    if (basePrice <= 165) return 32.00;
+    if (basePrice <= 170) return 32.00;
     return 25.00;
   };
   const eventIdRef = useRef<string | null>(null);
@@ -492,7 +492,7 @@ function HomePage() {
                       <div className="text-right shrink-0">
                         <p className="text-xs line-through opacity-60" style={{ color: sel ? '#fde68a' : '#b45309' }}>R$ {k.oldPrice.toFixed(2).replace('.', ',')}</p>
                         <p className="text-2xl font-black" style={{ color: sel ? '#fef3c7' : '#92400e', fontFamily: 'Archivo Black, sans-serif' }}>
-                          R$ 215,00
+                          R$ 217,90
                         </p>
                         <p className="text-[10px] font-bold" style={{ color: sel ? '#fde68a' : '#b45309' }}>R$ 3,58/pacote</p>
                       </div>
@@ -680,7 +680,7 @@ function HomePage() {
               className="flex-1 py-5 text-base font-black uppercase text-white"
               style={{ background: 'linear-gradient(135deg, #92400e, #d97706)', fontFamily: 'Archivo Black, sans-serif', boxShadow: '0 6px 20px rgba(217,119,6,0.5)' }}
             >
-              🥇 60 pacotes — R$ 215,00
+              🥇 60 pacotes — R$ 217,90
             </Button>
             <Button
               disabled={generating}
@@ -789,7 +789,7 @@ function HomePage() {
                 className="flex-1 py-5 text-base font-black uppercase text-white"
                 style={{ background: 'linear-gradient(135deg, #92400e, #d97706)', boxShadow: '0 6px 20px rgba(217,119,6,0.5)' }}
               >
-                🥇 60 pacotes — R$ 215,00
+                🥇 60 pacotes — R$ 217,90
               </Button>
               <Button
                 disabled={generating}

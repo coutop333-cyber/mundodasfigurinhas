@@ -68,7 +68,7 @@ export function OrderReviewDialog({
     ? { price: 38.00, perUnit: 3.80 }
     : basePrice <= 130
     ? { price: 29.90, perUnit: 2.99 }
-    : basePrice <= 165
+    : basePrice <= 170
     ? { price: 32.00, perUnit: 3.20 }
     : { price: 25.00, perUnit: 2.50 };
   const UPSELL_PRICE = upsellConfig.price;
