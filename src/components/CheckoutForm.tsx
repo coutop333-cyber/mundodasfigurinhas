@@ -158,7 +158,7 @@ export function CheckoutForm({
           </div>
           <div className="flex shrink-0 flex-col items-center gap-1">
             <div className="flex items-center justify-center rounded-xl bg-white border border-gray-100 px-3 py-2 shadow-sm">
-              <img src={pagarMeLogo} alt="Pagar.me Stone" className="h-8 w-auto" />
+              <img src={pagarMeLogo} alt="Pagar.me Stone" className="h-12 w-auto" />
             </div>
             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Parceiro Oficial</span>
           </div>
