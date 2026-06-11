@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ShieldCheck, Lock, Truck, Clock, Star } from 'lucide-react';
+import pagarMeLogo from '@/assets/logo-pagarme.png';
 
 interface Props {
   open: boolean;
@@ -152,19 +153,12 @@ export function CheckoutForm({
               </div>
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#007b40]">Checkout Protegido</span>
             </div>
-            <p className="text-[14px] font-black text-gray-900 mt-1" style={{ fontFamily: 'Archivo Black, sans-serif' }}>Pague com segurança via Pagar.me</p>
+            <p className="text-[14px] font-black text-gray-900 mt-1" style={{ fontFamily: 'Archivo Black, sans-serif' }}>Pague com segurança via Stone</p>
             <p className="text-[10px] text-gray-500 leading-tight">Criptografia SSL de ponta a ponta.<br/>Pix aprovado instantaneamente.</p>
           </div>
           <div className="flex shrink-0 flex-col items-center gap-1">
             <div className="flex items-center justify-center rounded-xl bg-white border border-gray-100 px-3 py-2 shadow-sm">
-              {/* Logo Pagar.me inline SVG */}
-              <svg width="80" height="28" viewBox="0 0 160 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <text x="0" y="42" fontFamily="Arial Black, sans-serif" fontSize="38" fontWeight="900" fill="#003D1F">pagar</text>
-                <text x="103" y="42" fontFamily="Arial Black, sans-serif" fontSize="38" fontWeight="900" fill="#003D1F">.me</text>
-                <text x="0" y="14" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="600" fill="#00B050">stone</text>
-                <circle cx="148" cy="8" r="10" fill="#00B050" opacity="0.9"/>
-                <path d="M143 8 Q148 2 153 8" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-              </svg>
+              <img src={pagarMeLogo} alt="Pagar.me Stone" className="h-8 w-auto" />
             </div>
             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Parceiro Oficial</span>
           </div>
